@@ -199,7 +199,7 @@ export default function Home() {
       country: "Saudi Arabia",
       rating: 5,
       comment:
-        "As a travel agent, I've been using their B2B platform for months. The wholesale rates are competitive and the support team is always responsive.",
+        "As a travel agent, I have been using their B2B platform for months. The wholesale rates are competitive and the support team is always responsive.",
       image:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
       verified: true,
@@ -240,7 +240,7 @@ export default function Home() {
     {
       icon: Award,
       title: "Best Price Promise",
-      description: "Find a lower price elsewhere? We'll match it plus 5% off",
+      description: "Find a lower price elsewhere? We shall match it plus 5% off",
       color: "from-purple-400 to-pink-500",
     },
     {

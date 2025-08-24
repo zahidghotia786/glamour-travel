@@ -9,6 +9,8 @@ import {
   Calendar, Shield, Building2
 } from "lucide-react";
 import logo from "@/public/images/logo.jpg";
+import Image from "next/image";
+
 
 export default function Header() {
   const pathname = usePathname();
@@ -105,10 +107,12 @@ export default function Header() {
           >
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <img 
+                <Image 
                   src={logo.src} 
                   alt="Logo" 
                   className="h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
+                  height={48}
+                  width={48}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>

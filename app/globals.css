@@ -1,26 +1,23 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* --- GAT Theme (from flyer) --- */
+:root{
+  --gat-primary:#2C72A1;   /* deep blue */
+  --gat-primary-700:#245C80;
+  --gat-primary-50:#E8F2F8;
+
+  --gat-slate:#2E343C;     /* dark slate (text) */
+  --gat-muted:#ADBCBF;     /* soft gray-blue accents */
+  --gat-bg:#F3F6F7;        /* light background */
+  --gat-card:#FFFFFF;      /* cards/sidebar */
+  --gat-success:#16A34A;
+  --gat-warning:#EAB308;
+  --gat-danger:#DC2626;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* utility helpers */
+.text-brand{ color:var(--gat-primary); }
+.bg-brand{ background:var(--gat-primary); }
+.bg-brand-soft{ background:var(--gat-primary-50); }
+.border-brand{ border-color:var(--gat-primary); }
+.shadow-brand{ box-shadow:0 10px 20px -10px rgba(44,114,161,.35); }

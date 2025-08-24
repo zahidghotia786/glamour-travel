@@ -135,7 +135,7 @@ export default function Footer() {
             </div>
             
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Discover the world's most amazing destinations with our premium travel experiences. 
+              Discover the {"world's"} most amazing destinations with our premium travel experiences. 
               We offer exclusive tickets, tours, and adventures across the globe.
             </p>
 

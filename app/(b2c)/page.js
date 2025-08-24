@@ -24,6 +24,7 @@ import {
   Filter,
   User,
 } from "lucide-react";
+import Image from "next/image";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -574,9 +575,11 @@ export default function Home() {
                 className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] group"
               >
                 <div className="relative">
-                  <img
+                  <Image
                     src={destination.image}
                     alt={destination.name}
+                    width={64} // 16 * 4 (Tailwind w-16 = 64px)
+                    height={64}
                     className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -738,10 +741,12 @@ export default function Home() {
                 className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <img
+                  <Image
                     src={testimonial.image}
                     alt={testimonial.name}
                     className="w-16 h-16 rounded-2xl object-cover"
+                    width={64} // 16 * 4 (Tailwind w-16 = 64px)
+                    height={64}
                   />
                   <div>
                     <div className="flex items-center gap-2">

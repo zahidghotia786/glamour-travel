@@ -35,7 +35,7 @@ export default function Home() {
   const heroSlides = [
     {
       id: 1,
-      title: "Experience Dubai's Wonders",
+      title: `Experience Dubai&apos;s Wonders`,
       subtitle: "Premium Theme Parks & Adventures",
       description:
         "Discover world-class attractions with exclusive deals and instant bookings",
@@ -81,7 +81,7 @@ export default function Home() {
       discount: "11% OFF",
       category: "theme-parks",
       highlights: [
-        "World's Fastest Roller Coaster",
+        "World&apos;s Fastest Roller Coaster",
         "Formula Rossa",
         "Family Friendly",
       ],
@@ -134,7 +134,7 @@ export default function Home() {
       discount: "13% OFF",
       category: "theme-parks",
       highlights: [
-        "World's Largest Indoor Park",
+        "World&apos;s Largest Indoor Park",
         "Marvel Zone",
         "Cartoon Network Zone",
       ],
@@ -228,7 +228,7 @@ export default function Home() {
     {
       icon: Shield,
       title: "Secure Booking",
-      description: "SSL encrypted payments with 100% money-back guarantee",
+      description: "SSL encrypted payments with 100% money back guarantee",
       color: "from-green-400 to-emerald-500",
     },
     {

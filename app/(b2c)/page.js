@@ -578,8 +578,8 @@ export default function Home() {
                   <Image
                     src={destination.image}
                     alt={destination.name}
-                    width={64} // 16 * 4 (Tailwind w-16 = 64px)
-                    height={64}
+                    width={800} // 16 * 4 (Tailwind w-16 = 800px)
+                    height={800}
                     className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold">

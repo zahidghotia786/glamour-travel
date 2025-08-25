@@ -111,8 +111,8 @@ export default function Header() {
                   src={logo.src} 
                   alt="Logo" 
                   className="h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
-                  height={48}
-                  width={48}
+                  height={800}
+                  width={800}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>

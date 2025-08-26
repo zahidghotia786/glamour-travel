@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
               </svg>
             </div>
             <p className="text-gray-600 mb-6">
-              If an account exists with {email}, we've sent password reset instructions.
+              If an account exists with {email}, we have sent password reset instructions.
             </p>
             <button
               onClick={() => setEmailSent(false)}

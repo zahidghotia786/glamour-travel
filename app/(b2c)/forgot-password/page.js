@@ -88,8 +88,9 @@ export default function ForgotPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
+            {/* eslint-disable-next-line react/no-unescaped-entities */}
             <p className="text-gray-600 mb-6">
-              {`If an account exists with ${email}, password reset instructions have been sent.`}
+              If an account exists with {email}, password reset instructions have been sent.
             </p>
 
             <button

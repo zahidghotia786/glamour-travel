@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Filter, Download, Upload, Users, Shield, Building2, UserCheck, Mail, Phone, Globe, Calendar, Settings, Crown, Key, CheckCircle, XCircle, ArrowLeft, ArrowRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchFromAPI } from "@/lib/api";
 
 const B2BPage = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -14,102 +15,38 @@ const B2BPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample B2B users data
-  const [b2bUsers, setB2bUsers] = useState([
-    {
-      id: 1,
-      name: 'Emirates Travel Co.',
-      contactPerson: 'Ahmed Al Rashid',
-      email: 'ahmed@emiratestravel.ae',
-      phone: '+971-4-123-4567',
-      role: 'premium-partner',
-      status: 'active',
-      country: 'UAE',
-      registeredDate: '2024-01-15',
-      lastLogin: '2024-08-20',
-      totalBookings: 1245,
-      totalRevenue: 2456780,
-      commission: 15,
-      apiAccess: true,
-      creditLimit: 50000,
-      accountManager: 'Sarah Johnson'
-    },
-    {
-      id: 2,
-      name: 'Global Tours Ltd.',
-      contactPerson: 'Maria Santos',
-      email: 'maria@globaltours.com',
-      phone: '+44-20-7946-0958',
-      role: 'standard-partner',
-      status: 'active',
-      country: 'UK',
-      registeredDate: '2024-02-10',
-      lastLogin: '2024-08-19',
-      totalBookings: 567,
-      totalRevenue: 892340,
-      commission: 12,
-      apiAccess: true,
-      creditLimit: 25000,
-      accountManager: 'John Smith'
-    },
-    {
-      id: 3,
-      name: 'Metro Travel Agency',
-      contactPerson: 'Raj Patel',
-      email: 'raj@metrotravel.in',
-      phone: '+91-22-2654-7890',
-      role: 'basic-partner',
-      status: 'pending',
-      country: 'India',
-      registeredDate: '2024-08-15',
-      lastLogin: null,
-      totalBookings: 0,
-      totalRevenue: 0,
-      commission: 10,
-      apiAccess: false,
-      creditLimit: 10000,
-      accountManager: 'Lisa Chen'
-    },
-    {
-      id: 4,
-      name: 'Desert Adventures',
-      contactPerson: 'Fatima Al Zahra',
-      email: 'fatima@desertadventures.ae',
-      phone: '+971-50-987-6543',
-      role: 'premium-partner',
-      status: 'active',
-      country: 'UAE',
-      registeredDate: '2024-03-22',
-      lastLogin: '2024-08-21',
-      totalBookings: 876,
-      totalRevenue: 1567890,
-      commission: 15,
-      apiAccess: true,
-      creditLimit: 45000,
-      accountManager: 'Michael Brown'
-    },
-    {
-      id: 5,
-      name: 'European Getaways',
-      contactPerson: 'Thomas Müller',
-      email: 'thomas@europeangetaways.de',
-      phone: '+49-30-12345678',
-      role: 'standard-partner',
-      status: 'active',
-      country: 'Germany',
-      registeredDate: '2024-04-05',
-      lastLogin: '2024-08-18',
-      totalBookings: 432,
-      totalRevenue: 654320,
-      commission: 12,
-      apiAccess: true,
-      creditLimit: 30000,
-      accountManager: 'Emma Wilson'
-    }
-  ]);
+  // B2B users data from backend
+  const [b2bUsers, setB2bUsers] = useState([]);
+  // Fetch users data from backend
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchFromAPI("admin/users", {
+          method: "GET",
+        });
+        
+        if (response) {
+          const usersData = await response;
+          setB2bUsers(usersData);
+        } else {
+          throw new Error('Failed to fetch users');
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Sample roles data
+    fetchUsers();
+  }, []);
+
+  // Sample roles data (you might want to fetch this from backend too)
   const [roles, setRoles] = useState([
     {
       id: 'premium-partner',
@@ -158,7 +95,7 @@ const B2BPage = () => {
 
   const filteredUsers = b2bUsers.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     
@@ -200,6 +137,7 @@ const B2BPage = () => {
   };
 
   const formatNumber = (num) => {
+    if (!num) return '0';
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
     }
@@ -209,7 +147,7 @@ const B2BPage = () => {
     return num.toString();
   };
 
-  const UserModal = ({ show, onClose, user, title }) => {
+   const UserModal = ({ show, onClose, user, title }) => {
     const [formData, setFormData] = useState(user || {
       name: '',
       contactPerson: '',
@@ -787,163 +725,173 @@ const B2BPage = () => {
 
         {/* Content */}
         {activeTab === 'users' && (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.4 }}
-    className="bg-white rounded-3xl shadow-lg overflow-hidden "
-  >
-    {/* Table wrapper with horizontal scrolling */}
-    <div className="overflow-x-auto w-full">
-      <table className="w-full min-w-[800px]">
-        <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-          <tr>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Company</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Contact</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Role</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Status</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Performance</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Commission</th>
-            <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Actions</th>
-          </tr>
-        </thead>
-
-        <tbody className="divide-y divide-gray-200">
-          {currentUsers.length > 0 ? (
-            currentUsers.map((user, index) => (
-              <motion.tr
-                key={user.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="hover:bg-gray-50 transition-all duration-200"
-              >
-                {/* Company */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{user.name}</div>
-                      <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                        <Globe className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{user.country}</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Contact */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-sm md:text-base truncate">{user.contactPerson}</div>
-                    <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                      <Mail className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-                    <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                      <Phone className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{user.phone}</span>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Role */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                    getRoleColor(user.role) === 'purple'
-                      ? 'bg-purple-100 text-purple-800'
-                      : getRoleColor(user.role) === 'blue'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {getRoleName(user.role)}
-                  </span>
-                </td>
-
-                {/* Status */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                    {getStatusIcon(user.status)}
-                    {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                  </span>
-                </td>
-
-                {/* Performance */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <div>
-                    <div className="font-semibold text-gray-900 text-sm md:text-base">{formatNumber(user.totalBookings)} bookings</div>
-                    <div className="text-xs md:text-sm text-gray-600">{formatNumber(user.totalRevenue)} AED</div>
-                  </div>
-                </td>
-
-                {/* Commission */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <div className="font-semibold text-gray-900 text-sm md:text-base">{user.commission}%</div>
-                  <div className="text-xs text-gray-500 truncate">Manager: {user.accountManager}</div>
-                </td>
-
-                {/* Actions */}
-                <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                  <div className="flex gap-1 md:gap-2">
-                    <button className="p-1 md:p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-                      <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                    </button>
-                    <button className="p-1 md:p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors">
-                      <Eye className="w-3 h-3 md:w-4 md:h-4" />
-                    </button>
-                    <button className="p-1 md:p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                      <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" className="px-6 py-8 md:py-10 text-center text-gray-500">
-                <p className="font-medium text-sm md:text-base">No users available</p>
-                <p className="text-xs md:text-sm text-gray-400">Start adding users to see them here.</p>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-
-    {/* Pagination */}
-    {filteredUsers.length > usersPerPage && (
-      <div className="px-4 py-3 md:px-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="text-sm text-gray-700">
-          Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{' '}
-          <span className="font-medium">
-            {Math.min(indexOfLastUser, filteredUsers.length)}
-          </span>{' '}
-          of <span className="font-medium">{filteredUsers.length}</span> results
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-3xl shadow-lg overflow-hidden  "
           >
-            Previous
-          </button>
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    )}
-  </motion.div>
-)}
+            {loading ? (
+              <div className="p-8 text-center">
+                <p>Loading users...</p>
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center text-red-600">
+                <p>Error: {error}</p>
+              </div>
+            ) : (
+              <>
+                {/* Table wrapper with horizontal scrolling */}
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full  overflow-hidden">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Company</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Contact</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Role</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Status</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Performance</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Commission</th>
+                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Actions</th>
+                      </tr>
+                    </thead>
 
+                    <tbody className="divide-y divide-gray-200">
+                      {currentUsers.length > 0 ? (
+                        currentUsers.map((user, index) => (
+                          <motion.tr
+                            key={user.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="hover:bg-gray-50 transition-all duration-200"
+                          >
+                            {/* Company */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <Building2 className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{user.name}</div>
+                                  <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
+                                    <Globe className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate">{user.country}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
 
+                            {/* Contact */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <div className="min-w-0">
+                                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{user.contactPerson}</div>
+                                <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
+                                  <Mail className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{user.email}</span>
+                                </div>
+                                <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
+                                  <Phone className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{user.phone}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Role */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                getRoleColor(user.role) === 'purple'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : getRoleColor(user.role) === 'blue'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {getRoleName(user.role)}
+                              </span>
+                            </td>
+
+                            {/* Status */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+                                {getStatusIcon(user.status)}
+                                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                              </span>
+                            </td>
+
+                            {/* Performance */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <div>
+                                <div className="font-semibold text-gray-900 text-sm md:text-base">{formatNumber(user.totalBookings)} bookings</div>
+                                <div className="text-xs md:text-sm text-gray-600">{formatNumber(user.totalRevenue)} AED</div>
+                              </div>
+                            </td>
+
+                            {/* Commission */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <div className="font-semibold text-gray-900 text-sm md:text-base">{user.commission}%</div>
+                              <div className="text-xs text-gray-500 truncate">Manager: {user.accountManager}</div>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
+                              <div className="flex gap-1 md:gap-2">
+                                <button className="p-1 md:p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                                  <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                                </button>
+                                <button className="p-1 md:p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors">
+                                  <Eye className="w-3 h-3 md:w-4 md:h-4" />
+                                </button>
+                                <button className="p-1 md:p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                                  <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="px-6 py-8 md:py-10 text-center text-gray-500">
+                            <p className="font-medium text-sm md:text-base">No users available</p>
+                            <p className="text-xs md:text-sm text-gray-400">Start adding users to see them here.</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {filteredUsers.length > usersPerPage && (
+                  <div className="px-4 py-3 md:px-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{' '}
+                      <span className="font-medium">
+                        {Math.min(indexOfLastUser, filteredUsers.length)}
+                      </span>{' '}
+                      of <span className="font-medium">{filteredUsers.length}</span> results
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
 
         {activeTab === 'roles' && (
           <motion.div

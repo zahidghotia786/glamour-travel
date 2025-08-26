@@ -151,7 +151,7 @@ export default function Footer() {
                 <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
                   <Mail className="w-4 h-4 text-blue-400" />
                 </div>
-                <span>info@glamouradventures.com</span>
+                <span>glamourtours.ae</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">

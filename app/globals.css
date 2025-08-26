@@ -21,3 +21,12 @@
 .bg-brand-soft{ background:var(--gat-primary-50); }
 .border-brand{ border-color:var(--gat-primary); }
 .shadow-brand{ box-shadow:0 10px 20px -10px rgba(44,114,161,.35); }
+
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

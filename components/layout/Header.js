@@ -8,9 +8,7 @@ import {
   Globe, ChevronDown, Sparkles, Home, Ticket, 
   Calendar, Shield, Building2
 } from "lucide-react";
-import logo from "@/public/images/logo.jpg";
 import Image from "next/image";
-
 
 export default function Header() {
   const pathname = usePathname();
@@ -19,6 +17,7 @@ export default function Header() {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
   const navLinks = [
     { href: "/", label: "Home", icon: Home },
@@ -90,7 +89,7 @@ export default function Header() {
     <motion.header 
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? "bg-white/95 backdrop-blur-xl shadow-xl border-b border-gray-100" 
+          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
           : "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 shadow-lg"
       }`}
       initial={{ y: -100 }}
@@ -108,19 +107,19 @@ export default function Header() {
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
                 <Image 
-                  src={logo.src} 
+                  src="/images/logo.png" 
                   alt="Logo" 
-                  className="h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
+                  className="bg-white/80 backdrop-blur-sm h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
                   height={800}
                   width={800}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
               <div className="hidden sm:block">
-                <h1 className={`text-xl font-bold ${scrolled ? 'text-gray-800' : 'text-white'}`}>
+                <h1 className={`text-xl font-bold ${scrolled ? 'text-gray-100' : 'text-white'}`}>
                   Glamour Adventures
                 </h1>
-                <p className={`text-xs ${scrolled ? 'text-gray-600' : 'text-white/80'}`}>
+                <p className={`text-xs ${scrolled ? 'text-gray-200' : 'text-white/80'}`}>
                   Premium Travel Experience
                 </p>
               </div>
@@ -128,7 +127,7 @@ export default function Header() {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-4 xl:space-x-8">
             {navLinks.map((link, index) => {
               const IconComponent = link.icon;
               const isActive = pathname === link.href;
@@ -142,14 +141,14 @@ export default function Header() {
                 >
                   <Link
                     href={link.href}
-                    className={`group flex items-center gap-2 px-4 py-2 rounded-2xl font-medium transition-all duration-300 transform hover:scale-105 ${
+                    className={`group flex items-center gap-2 px-3 xl:px-4 py-2 rounded-2xl font-medium transition-all duration-300 transform hover:scale-105 ${
                       isActive
                         ? scrolled
                           ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
                           : "bg-white/20 backdrop-blur-sm text-white shadow-lg"
                         : scrolled
-                        ? "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-                        : "text-white/90 hover:text-white hover:bg-white/10"
+                        ? "text-white hover:text-white hover:bg-white/10"
+                        : "text-white hover:text-white hover:bg-white/10"
                     }`}
                   >
                     <IconComponent className="w-4 h-4 group-hover:animate-pulse" />
@@ -169,11 +168,11 @@ export default function Header() {
 
             {/* Language Selector */}
             <div className="relative group">
-              <button className={`flex items-center gap-2 px-4 py-2 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 ${
+              <button className={`flex items-center text-white gap-2 px-3 xl:px-4 py-2 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 ${
                 scrolled 
-                  ? "border-blue-200 text-gray-700 hover:border-blue-500 hover:bg-blue-50" 
-                  : "border-white/30 text-white hover:border-white hover:bg-white/10"
-              }`}>
+                  ? "border-blue-200 hover:border-blue-500 hover:bg-blue-500/20" 
+                  : "border-white/30 hover:border-white hover:bg-white/10"
+              } `}>
                 <Globe className="w-4 h-4" />
                 <span className="text-sm font-medium">🇺🇸 EN</span>
                 <ChevronDown className="w-3 h-3 group-hover:rotate-180 transition-transform duration-300" />
@@ -200,18 +199,18 @@ export default function Header() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-2xl transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-3 xl:px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl transition-all duration-300 ${
                     scrolled 
-                      ? "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 hover:from-blue-100 hover:to-purple-100" 
-                      : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                      ? " text-white hover:from-blue-100 hover:to-purple-100" 
+                      : " text-white hover:bg-white/30"
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${getRoleBadgeColor(user.role)}`}>
                     {user.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
-                  <div className="text-left">
+                  <div className="text-left hidden xl:block">
                     <p className="text-sm font-semibold">{user.name}</p>
-                    <p className={`text-xs ${scrolled ? 'text-gray-500' : 'text-white/70'}`}>
+                    <p className={`text-xs ${scrolled ? 'text-white/70' : 'text-white/70'}`}>
                       {user.role}
                     </p>
                   </div>
@@ -289,28 +288,76 @@ export default function Header() {
               >
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold px-6 py-3 rounded-2xl hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold px-4 xl:px-6 py-3 rounded-2xl hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Login / Register
+                  <span className="hidden sm:block">Login / Register</span>
+                  <span className="sm:hidden">Login</span>
                 </Link>
               </motion.div>
             )}
           </nav>
 
-          {/* Mobile Menu Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`lg:hidden p-3 rounded-2xl transition-all duration-300 ${
-              scrolled 
-                ? "bg-gray-100 text-gray-800 hover:bg-gray-200" 
-                : "bg-white/20 text-white hover:bg-white/30"
-            }`}
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
-          </motion.button>
+          {/* Mobile Navigation (Language Switcher added here) */}
+          <div className="flex items-center lg:hidden">
+            {/* Language Selector for Mobile (in navbar) */}
+            <div className="relative mr-3">
+              <button 
+                onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                className={`flex items-center justify-center p-2 rounded-2xl border-2 transition-all duration-300 ${
+                  scrolled 
+                    ? "border-blue-200 text-gray-700 hover:border-blue-500 hover:bg-blue-50" 
+                    : "border-white/30 text-white hover:border-white hover:bg-white/10"
+                }`}
+              >
+                <Globe className="w-5 h-5 text-white" />
+              </button>
+              
+              {/* Language Dropdown for Mobile */}
+              <AnimatePresence>
+                {languageDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setLanguageDropdownOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-40 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-20"
+                    >
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 transition-all duration-200 first:rounded-t-2xl last:rounded-b-2xl"
+                          onClick={() => setLanguageDropdownOpen(false)}
+                        >
+                          <span className="text-lg">{lang.flag}</span>
+                          {lang.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className={`p-3 rounded-2xl transition-all duration-300 ${
+                scrolled 
+                  ? "bg-gray-100 text-gray-800 hover:bg-gray-200" 
+                  : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </motion.button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -408,26 +455,6 @@ export default function Header() {
                       </Link>
                     </motion.div>
                   )}
-
-                  {/* Language Selector for Mobile */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="pt-4 border-t border-gray-200"
-                  >
-                    <div className="grid grid-cols-3 gap-2">
-                      {languages.map((lang) => (
-                        <button
-                          key={lang.code}
-                          className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
-                        >
-                          <span className="text-sm">{lang.flag}</span>
-                          <span className="text-sm font-medium">{lang.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
                 </div>
               </motion.div>
             </>

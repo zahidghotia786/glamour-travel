@@ -198,7 +198,7 @@ export default function LoginPage() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-gray-600 text-lg leading-relaxed"
           >
-            Discover the magic of UAE with exclusive access to world-class theme parks and luxury experiences.
+            Discover the magic of UAE with exclusive access to world class theme parks and luxury experiences.
           </motion.p>
         </motion.div>
 
@@ -308,7 +308,7 @@ export default function LoginPage() {
               {/* Register Link */}
               <div className="mt-8 pt-6 border-t border-gray-200 text-center">
                 <p className="text-gray-600">
-                  {"Don't"} have an account?{" "}
+                  Don not have an account?{" "}
                   <button 
                     onClick={() => router.push("/register")}
                     className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors"
@@ -352,7 +352,7 @@ export default function LoginPage() {
                   <Key className="w-6 h-6 text-white" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-800 mb-2">Reset Your Password</h2>
-                <p className="text-gray-600 text-sm">Enter your email address and {"we'll"} send you a link to reset your password</p>
+                <p className="text-gray-600 text-sm">Enter your email address and we shall send you a link to reset your password</p>
               </div>
 
               <div className="space-y-5">

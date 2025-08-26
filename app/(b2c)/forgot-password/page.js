@@ -88,9 +88,10 @@ export default function ForgotPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
-            <p className="text-gray-600 mb-6">
-              If an account exists with {email}, we have sent password reset instructions.
-            </p>
+<p className="text-gray-600 mb-6">
+  If an account exists with {email}, password reset instructions have been sent.
+</p>
+
             <button
               onClick={() => setEmailSent(false)}
               className="text-blue-600 hover:text-blue-700 font-semibold"

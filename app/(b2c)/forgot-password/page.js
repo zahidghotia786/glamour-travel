@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
               </svg>
             </div>
             <p className="text-gray-600 mb-6">
-              If an account exists with {email} password reset instructions have been sent.
+              {`If an account exists with ${email}, password reset instructions have been sent.`}
             </p>
 
             <button

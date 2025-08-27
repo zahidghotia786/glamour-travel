@@ -10,6 +10,7 @@ import {
   RefreshCw, FileText, Settings, Bell, Shield
 } from "lucide-react";
 
+
 export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,7 +172,7 @@ export default function BookingsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
@@ -422,7 +423,8 @@ export default function BookingsPage() {
         </motion.div>
 
         {/* Bookings Table/Cards */}
-        <motion.div
+          {/* <div className="w-[420px] sm:w-[700px] overflow-hidden h-max"> */}
+          <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -430,16 +432,16 @@ export default function BookingsPage() {
         >
           {viewMode === 'table' ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[400px]"> {/* Added min-width for small screens */}
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Booking Info</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Customer</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Attraction</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Visit Date</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Amount</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Booking Info</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Customer</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Attraction</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Visit Date</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Amount</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                    <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -451,10 +453,10 @@ export default function BookingsPage() {
                       transition={{ delay: index * 0.1 }}
                       className="hover:bg-gray-50 transition-all duration-200"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div>
-                          <div className="font-semibold text-gray-900">{booking.bookingRef}</div>
-                          <div className="text-sm text-gray-600">
+                          <div className="font-semibold text-gray-900 text-sm sm:text-base">{booking.bookingRef}</div>
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {booking.customerType === 'B2B' ? (
                               <span className="inline-flex items-center gap-1">
                                 <Building2 className="w-3 h-3" />
@@ -469,39 +471,39 @@ export default function BookingsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{booking.customerName}</div>
-                          <div className="text-sm text-gray-600">{booking.customerEmail}</div>
+                          <div className="font-medium text-gray-900 text-sm sm:text-base">{booking.customerName}</div>
+                          <div className="text-xs sm:text-sm text-gray-600">{booking.customerEmail}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                             <Globe className="w-3 h-3" />
                             {booking.country} | {booking.language.toUpperCase()}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{booking.attraction}</div>
-                          <div className="text-sm text-gray-600">{booking.ticketType}</div>
+                          <div className="font-medium text-gray-900 text-sm sm:text-base">{booking.attraction}</div>
+                          <div className="text-xs sm:text-sm text-gray-600">{booking.ticketType}</div>
                           <div className="text-xs text-gray-500">Qty: {booking.quantity}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1 text-sm text-gray-900">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
+                        <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-900">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                           {booking.visitDate}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div>
-                          <div className="font-semibold text-gray-900">{booking.totalAmount}</div>
+                          <div className="font-semibold text-gray-900 text-sm sm:text-base">{booking.totalAmount}</div>
                           <div className="text-xs text-gray-500 line-through">{booking.originalPrice}</div>
                           <div className="text-xs text-green-600">Markup: {booking.markup}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div className="flex flex-col gap-2">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                             {getStatusIcon(booking.status)}
                             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                           </span>
@@ -515,13 +517,13 @@ export default function BookingsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div className="flex items-center gap-2">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setSelectedBooking(booking)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+                            className="p-1 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
@@ -530,7 +532,7 @@ export default function BookingsPage() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-all duration-200"
+                            className="p-1 sm:p-2 text-green-600 hover:bg-green-50 rounded-full transition-all duration-200"
                             title="Download Voucher"
                           >
                             <Download className="w-4 h-4" />
@@ -539,7 +541,7 @@ export default function BookingsPage() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-full transition-all duration-200"
+                            className="p-1 sm:p-2 text-amber-600 hover:bg-amber-50 rounded-full transition-all duration-200"
                             title="Send Email"
                           >
                             <Mail className="w-4 h-4" />
@@ -548,7 +550,7 @@ export default function BookingsPage() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-all duration-200"
+                            className="p-1 sm:p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-all duration-200"
                             title="More Actions"
                           >
                             <MoreVertical className="w-4 h-4" />
@@ -698,6 +700,7 @@ export default function BookingsPage() {
             </div>
           )}
         </motion.div>
+          {/* </div> */}
 
         {/* Booking Detail Modal */}
         <AnimatePresence>

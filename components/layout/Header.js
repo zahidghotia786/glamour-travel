@@ -109,7 +109,7 @@ export default function Header() {
                 <Image 
                   src="/images/logo.png" 
                   alt="Logo" 
-                  className="bg-white/80 backdrop-blur-sm h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
+                  className="bg-white/65 backdrop-blur-sm h-12 w-auto rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300" 
                   height={800}
                   width={800}
                 />

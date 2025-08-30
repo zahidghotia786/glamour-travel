@@ -305,54 +305,67 @@ export default function Footer() {
       </div>
 
       {/* Bottom Footer */}
-      <div className="relative border-t border-gray-700 bg-black/20 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <p className="text-sm text-gray-400">
-                © {currentYear} Glamour Adventures Tours. All rights reserved.
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Licensed Travel Agency | IATA Certified | Dubai Tourism Licensed
-              </p>
-            </div>
+<div className="relative border-t border-gray-700 bg-black/20 backdrop-blur-sm">
+  <div className="container mx-auto px-6 py-6">
+    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="text-center md:text-left">
+        <p className="text-sm text-gray-400">
+          © {currentYear} Glamour Adventures Tours. All rights reserved.
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Licensed Travel Agency | Dubai Tourism Licensed
+        </p>
+<p className="text-xs text-gray-500 mt-1">
+  Developed by{" "}
+  <a
+    href="https://zahidghotia.vercel.app/" 
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-white font-semibold hover:underline"
+  >
+    ZG.dev
+  </a>
+</p>
 
-            {/* Social Media */}
-            <div className="flex items-center gap-4">
-              {socialLinks.map((social) => {
-                const IconComponent = social.icon;
-                return (
-                  <a
-                    key={social.href}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-gray-400 ${social.color} transition-all duration-300 transform hover:scale-110 hover:bg-white/20 backdrop-blur-sm`}
-                    aria-label={social.label}
-                  >
-                    <IconComponent className="w-5 h-5" />
-                  </a>
-                );
-              })}
-            </div>
-
-            {/* Legal Links */}
-            <div className="flex flex-wrap justify-center gap-4 text-xs">
-              {legalLinks.slice(0, 3).map((link, index) => (
-                <span key={link.href} className="flex items-center gap-4">
-                  <Link
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors duration-300"
-                  >
-                    {link.label}
-                  </Link>
-                  {index < 2 && <span className="text-gray-600">•</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
+
+      {/* Social Media */}
+      <div className="flex items-center gap-4">
+        {socialLinks.map((social) => {
+          const IconComponent = social.icon;
+          return (
+            <a
+              key={social.href}
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-gray-400 ${social.color} transition-all duration-300 transform hover:scale-110 hover:bg-white/20 backdrop-blur-sm`}
+              aria-label={social.label}
+            >
+              <IconComponent className="w-5 h-5" />
+            </a>
+          );
+        })}
+      </div>
+
+      {/* Legal Links */}
+      <div className="flex flex-wrap justify-center gap-4 text-xs">
+        {legalLinks.slice(0, 3).map((link, index) => (
+          <span key={link.href} className="flex items-center gap-4">
+            <Link
+              href={link.href}
+              className="text-gray-400 hover:text-white transition-colors duration-300"
+            >
+              {link.label}
+            </Link>
+            {index < 2 && <span className="text-gray-600">•</span>}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
     </footer>
   );
 }

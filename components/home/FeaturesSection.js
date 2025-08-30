@@ -1,31 +1,31 @@
 "use client";
 import { motion } from "framer-motion";
-import { Shield, Zap, Award, Users } from "lucide-react";
+import { Shield, Zap, Award, Users, Globe, Star } from "lucide-react";
 
 export default function FeaturesSection() {
   const features = [
     {
       icon: Shield,
       title: "Secure Booking",
-      description: "SSL encrypted payments with 100% money back guarantee",
+      description: "Safe and protected transactions every time you book",
       color: "from-green-400 to-emerald-500",
     },
     {
-      icon: Zap,
-      title: "Instant Confirmation",
-      description: "Get your tickets immediately via email and SMS",
+      icon: Globe,
+      title: "Wide Destination Coverage",
+      description: "Explore a variety of destinations across the UAE and beyond",
       color: "from-blue-400 to-cyan-500",
     },
     {
-      icon: Award,
-      title: "Best Price Promise",
-      description: "Find a lower price elsewhere? We shall match it plus 5% off",
+      icon: Star,
+      title: "Trusted by Thousands",
+      description: "Highly rated tours with satisfied travelers worldwide",
       color: "from-purple-400 to-pink-500",
     },
     {
       icon: Users,
       title: "24/7 Support",
-      description: "Expert customer service team available round the clock",
+      description: "Friendly experts ready to assist you anytime, anywhere",
       color: "from-amber-400 to-orange-500",
     },
   ];

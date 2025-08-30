@@ -293,7 +293,7 @@ export default function LoginPage() {
                 </motion.button>
 
                 {/* Forgot Password Link */}
-                <div className="text-center">
+                {/* <div className="text-center">
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(true)}
@@ -302,7 +302,7 @@ export default function LoginPage() {
                     <Key className="w-4 h-4" />
                     Forgot Password?
                   </button>
-                </div>
+                </div> */}
               </div>
 
               {/* Register Link */}

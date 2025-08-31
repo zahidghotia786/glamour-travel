@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Star, Sparkles, ArrowRight, Play } from "lucide-react";
 import Image from "next/image";
 
+
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,7 +210,7 @@ export default function HeroSection() {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
 
-              <motion.button
+              {/* <motion.button
                 whileHover={{
                   scale: 1.05,
                   backgroundColor: "rgba(255,255,255,0.3)",
@@ -219,47 +220,12 @@ export default function HeroSection() {
               >
                 <Play className="w-5 h-5" />
                 Watch Demo
-              </motion.button>
+              </motion.button> */}
             </motion.div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Hero Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
-            <div className="flex flex-col lg:flex-row items-center gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search destinations, theme parks, attractions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-lg"
-                />
-              </div>
-              <select className="px-6 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 text-gray-800 bg-white">
-                <option>Select Date</option>
-                <option>Today</option>
-                <option>Tomorrow</option>
-                <option>This Weekend</option>
-              </select>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 flex items-center gap-2"
-              >
-                <Search className="w-5 h-5" />
-                Search
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
+
       </div>
 
       {/* Slide Indicators */}
@@ -275,6 +241,7 @@ export default function HeroSection() {
           />
         ))}
       </div>
+      
     </section>
   );
 }

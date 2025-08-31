@@ -1,1020 +1,1112 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Filter, Download, Upload, Users, Shield, Building2, UserCheck, Mail, Phone, Globe, Calendar, Settings, Crown, Key, CheckCircle, XCircle, ArrowLeft, ArrowRight, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchFromAPI } from "@/lib/api";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  Search,
+  Filter,
+  Plus,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  Download,
+  Upload,
+  RefreshCw,
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  Crown,
+  Shield,
+  User,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  Settings,
+  Ban,
+  UserPlus,
+} from "lucide-react";
+import { adminApi, handleApiError, toastConfig } from "@/lib/api";
+import toast from "react-hot-toast";
+import Loader from "@/components/common/Loader";
+import Link from "next/link";
 
-const B2BPage = () => {
-  const [activeTab, setActiveTab] = useState('users');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage] = useState(10);
+const UsersManagement = () => {
+  // State management
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // B2B users data from backend
-  const [b2bUsers, setB2bUsers] = useState([]);
-  // Fetch users data from backend
-  useEffect(() => {
-    const fetchUsers = async () => {
+  // Filters and search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("registeredDate");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Modal states
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  // Add b2b mnanager assignment modal state
+  const [showAssignManagerModal, setShowAssignManagerModal] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const [selectedManager, setSelectedManager] = useState("");
+
+  // Bulk action loading states
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  console.log(users);
+  // Fetch users from backend
+  const fetchUsers = useCallback(
+    async (page = 1, showLoading = true) => {
+      if (showLoading) setLoading(true);
+
       try {
-        setLoading(true);
-        const response = await fetchFromAPI("admin/users", {
-          method: "GET",
-        });
-        
-        if (response) {
-          const usersData = await response;
-          setB2bUsers(usersData);
-        } else {
-          throw new Error('Failed to fetch users');
-        }
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching users:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+        const params = {
+          page,
+          limit: 20,
+          search: searchTerm,
+          role: roleFilter !== "all" ? roleFilter : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          sortBy,
+          sortOrder,
+        };
 
-    fetchUsers();
+        // Remove undefined params
+        Object.keys(params).forEach(
+          (key) => params[key] === undefined && delete params[key]
+        );
+
+        const response = await adminApi.getUsers(params);
+
+        setUsers(response.data || response.users || []);
+        setCurrentPage(
+          response.pagination?.currentPage || response.pagination?.page || 1
+        );
+        setTotalPages(response.pagination?.totalPages || 1);
+        setTotalCount(response.pagination?.total || response.totalCount || 0);
+      } catch (error) {
+        handleApiError(error, toast);
+      } finally {
+        if (showLoading) setLoading(false);
+      }
+    },
+    [searchTerm, roleFilter, statusFilter, sortBy, sortOrder]
+  );
+
+  // Initial load and refresh on filter changes
+  useEffect(() => {
+    fetchUsers(1);
+  }, [fetchUsers]);
+
+  // Handle user actions
+  const handleUserAction = async (userId, action, newValue = null) => {
+    try {
+      let response;
+
+      switch (action) {
+        case "toggleStatus":
+          const user = users.find((u) => u.id === userId);
+          const newStatus = user.status === "active" ? "inactive" : "active";
+          response = await adminApi.updateUserStatus(
+            userId,
+            newStatus === "active"
+          );
+          toast.success(
+            `User ${
+              newStatus === "active" ? "activated" : "blocked"
+            } successfully`
+          );
+          break;
+
+        case "updateRole":
+          response = await adminApi.updateUserRole(userId, newValue);
+          toast.success("User role updated successfully");
+          break;
+
+        case "delete":
+          if (window.confirm("Are you sure you want to delete this user?")) {
+            response = await adminApi.deleteUser(userId);
+            toast.success("User deleted successfully");
+          } else {
+            return;
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      // Refresh the user list
+      await fetchUsers(currentPage, false);
+    } catch (error) {
+      handleApiError(error, toast);
+    }
+  };
+
+  // Handle bulk actions
+  const handleBulkAction = async (action) => {
+    if (selectedUsers.length === 0) {
+      toast.warning("Please select users first");
+      return;
+    }
+
+    setBulkActionLoading(true);
+
+    try {
+      let successCount = 0;
+      const promises = selectedUsers.map(async (userId) => {
+        try {
+          switch (action) {
+            case "activate":
+              await adminApi.updateUserStatus(userId, true);
+              break;
+            case "block":
+              await adminApi.updateUserStatus(userId, false);
+              break;
+            case "delete":
+              await adminApi.deleteUser(userId);
+              break;
+            default:
+              break;
+          }
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to ${action} user ${userId}:`, error);
+        }
+      });
+
+      await Promise.all(promises);
+
+      toast.success(`${successCount} users ${action}ed successfully`);
+      setSelectedUsers([]);
+      setShowBulkActions(false);
+      await fetchUsers(currentPage, false);
+    } catch (error) {
+      handleApiError(error, toast);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  // fetch account managers for assignment
+  const fetchAccountManagers = useCallback(async () => {
+    try {
+      const response = await adminApi.getUsers({ role: "ADMIN", limit: 50 });
+      setManagers(response.data || response.users || []);
+    } catch (error) {
+      console.error("Failed to fetch managers:", error);
+      toast.error("Failed to load account managers");
+    }
   }, []);
 
-  // Sample roles data (you might want to fetch this from backend too)
-  const [roles, setRoles] = useState([
-    {
-      id: 'premium-partner',
-      name: 'Premium Partner',
-      description: 'Top-tier partners with full access and highest commission rates',
-      permissions: ['view_all_products', 'bulk_booking', 'api_access', 'priority_support', 'custom_pricing', 'white_label'],
-      commission: 15,
-      creditLimit: 50000,
-      userCount: 2,
-      color: 'purple'
-    },
-    {
-      id: 'standard-partner',
-      name: 'Standard Partner',
-      description: 'Regular partners with standard access and commission rates',
-      permissions: ['view_products', 'booking', 'api_access', 'standard_support'],
-      commission: 12,
-      creditLimit: 25000,
-      userCount: 2,
-      color: 'blue'
-    },
-    {
-      id: 'basic-partner',
-      name: 'Basic Partner',
-      description: 'Entry-level partners with limited access',
-      permissions: ['view_products', 'booking', 'email_support'],
-      commission: 10,
-      creditLimit: 10000,
-      userCount: 1,
-      color: 'green'
+  // Handle assigning account manager
+  const handleAssignManager = async (userId) => {
+    if (!selectedManager) {
+      toast.error("Please select an account manager");
+      return;
     }
-  ]);
 
-  const allPermissions = [
-    { id: 'view_all_products', name: 'View All Products', category: 'Products' },
-    { id: 'view_products', name: 'View Products', category: 'Products' },
-    { id: 'booking', name: 'Make Bookings', category: 'Booking' },
-    { id: 'bulk_booking', name: 'Bulk Bookings', category: 'Booking' },
-    { id: 'api_access', name: 'API Access', category: 'Technical' },
-    { id: 'priority_support', name: 'Priority Support', category: 'Support' },
-    { id: 'standard_support', name: 'Standard Support', category: 'Support' },
-    { id: 'email_support', name: 'Email Support', category: 'Support' },
-    { id: 'custom_pricing', name: 'Custom Pricing', category: 'Pricing' },
-    { id: 'white_label', name: 'White Label Access', category: 'Branding' }
-  ];
-
-  const filteredUsers = b2bUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  // Pagination
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-
-  const getRoleColor = (roleId) => {
-    const role = roles.find(r => r.id === roleId);
-    return role?.color || 'gray';
-  };
-
-  const getRoleName = (roleId) => {
-    const role = roles.find(r => r.id === roleId);
-    return role?.name || roleId;
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+    try {
+      await adminApi.assignAccountManager(userId, selectedManager);
+      toast.success("Account manager assigned successfully");
+      setShowAssignManagerModal(false);
+      setSelectedManager("");
+      await fetchUsers(currentPage, false);
+    } catch (error) {
+      handleApiError(error, toast);
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'active': return <CheckCircle className="w-4 h-4" />;
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'inactive': return <XCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
+  // Call this in useEffect
+  useEffect(() => {
+    fetchUsers(1);
+    fetchAccountManagers(); // Add this line
+  }, [fetchUsers]);
+
+  // Load user details
+  const loadUserDetails = async (userId) => {
+    try {
+      const userDetails = await adminApi.getUserDetails(userId);
+      setSelectedUser(userDetails);
+      setShowUserModal(true);
+    } catch (error) {
+      handleApiError(error, toast);
     }
   };
 
-  const formatNumber = (num) => {
-    if (!num) return '0';
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
+  // Handle refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchUsers(currentPage, false);
+    setRefreshing(false);
+    toast.success("Data refreshed successfully");
   };
 
-   const UserModal = ({ show, onClose, user, title }) => {
-    const [formData, setFormData] = useState(user || {
-      name: '',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      role: 'basic-partner',
-      status: 'pending',
-      country: '',
-      commission: 10,
-      apiAccess: false,
-      creditLimit: 10000,
-      accountManager: ''
-    });
+  // Export users
+  const handleExport = async () => {
+    try {
+      // This would be a real API call in production
+      const csvData = users.map((user) => ({
+        Name: user.name || `${user.firstName} ${user.lastName}`,
+        Email: user.email,
+        Role: user.role,
+        Status: user.status,
+        "Total Bookings": user.totalBookings || 0,
+        "Total Revenue": user.totalRevenue || 0,
+        "Registered Date": user.registeredDate || user.registeredDate,
+      }));
 
-    if (!show) return null;
+      // Convert to CSV and download
+      const csvString = [
+        Object.keys(csvData[0]).join(","),
+        ...csvData.map((row) => Object.values(row).join(",")),
+      ].join("\n");
 
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      const blob = new Blob([csvString], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `users-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Users exported successfully");
+    } catch (error) {
+      toast.error("Failed to export users");
+    }
+  };
+
+  // Utility functions
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case "ADMIN":
+        return <Crown className="w-4 h-4 text-yellow-500" />;
+      case "B2B":
+        return <Shield className="w-4 h-4 text-blue-500" />;
+      default:
+        return <User className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getRoleBadge = (role) => {
+    const colors = {
+      ADMIN: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      B2B: "bg-blue-100 text-blue-800 border-blue-200",
+      CUSTOMER: "bg-gray-100 text-gray-800 border-gray-200",
+    };
+    return colors[role] || colors.CUSTOMER;
+  };
+
+  const getStatusColor = (active) => {
+    return active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
+  };
+
+  const InfoRow = ({ icon: Icon, label, value }) => (
+    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+      <Icon className="w-4 h-4 text-blue-500" />
+      <div>
+        <p className="text-sm text-gray-600">{label}</p>
+        <p className="font-medium">{value ?? "N/A"}</p>
+      </div>
+    </div>
+  );
+
+  // Loading state
+  if (loading) {
+    return <Loader />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 overflow-hidden">
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto overflow-hidden">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10"
         >
-          <div className="p-4 md:p-8">
-            <div className="flex items-center justify-between mb-6 md:mb-8">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{title}</h2>
-                <p className="text-gray-600 text-sm md:text-base">Manage B2B partner details</p>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-2 md:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-              >
-                <XCircle className="w-5 h-5 md:w-6 md:h-6" />
-              </motion.button>
-            </div>
-
-            <div className="space-y-4 md:space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter company name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
-                  <input
-                    type="text"
-                    value={formData.contactPerson}
-                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter contact person name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter email address"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter phone number"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    value={formData.country}
-                    onChange={(e) => setFormData({...formData, country: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter country"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
-                  <input
-                    type="text"
-                    value={formData.accountManager}
-                    onChange={(e) => setFormData({...formData, accountManager: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter account manager"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    {roles.map(role => (
-                      <option key={role.id} value={role.id}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    <option value="active">Active</option>
-                    <option value="pending">Pending</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Commission (%)</label>
-                  <input
-                    type="number"
-                    value={formData.commission}
-                    onChange={(e) => setFormData({...formData, commission: parseFloat(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Limit (AED)</label>
-                  <input
-                    type="number"
-                    value={formData.creditLimit}
-                    onChange={(e) => setFormData({...formData, creditLimit: parseInt(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Users Management
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Manage all platform users and their permissions
+                </p>
               </div>
 
               <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="apiAccess"
-                  checked={formData.apiAccess}
-                  onChange={(e) => setFormData({...formData, apiAccess: e.target.checked})}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="apiAccess" className="text-gray-700 font-medium">API Access Enabled</label>
-              </div>
-
-              <div className="flex gap-3 md:gap-4 pt-4 md:pt-6 border-t border-gray-200">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={onClose}
-                  className="px-4 py-2 md:px-6 md:py-3 border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors font-medium text-sm md:text-base"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/70 border border-gray-200 rounded-xl hover:bg-white transition-colors disabled:opacity-50"
                 >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base"
-                  onClick={() => onClose()}
-                >
-                  {user ? 'Update User' : 'Create User'}
-                </motion.button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
-
-  const RoleModal = ({ show, onClose, role, title }) => {
-    const [formData, setFormData] = useState(role || {
-      id: '',
-      name: '',
-      description: '',
-      permissions: [],
-      commission: 10,
-      creditLimit: 10000,
-      color: 'blue'
-    });
-
-    if (!show) return null;
-
-    const togglePermission = (permissionId) => {
-      const permissions = formData.permissions.includes(permissionId)
-        ? formData.permissions.filter(p => p !== permissionId)
-        : [...formData.permissions, permissionId];
-      setFormData({...formData, permissions});
-    };
-
-    const permissionsByCategory = allPermissions.reduce((acc, permission) => {
-      if (!acc[permission.category]) acc[permission.category] = [];
-      acc[permission.category].push(permission);
-      return acc;
-    }, {});
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto"
-        >
-          <div className="p-4 md:p-8">
-            <div className="flex items-center justify-between mb-6 md:mb-8">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{title}</h2>
-                <p className="text-gray-600 text-sm md:text-base">Define role permissions and settings</p>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-2 md:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-              >
-                <XCircle className="w-5 h-5 md:w-6 md:h-6" />
-              </motion.button>
-            </div>
-
-            <div className="space-y-4 md:space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Role Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Enter role name"
+                  <RefreshCw
+                    className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
                   />
-                </div>
+                  Refresh
+                </motion.button>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Theme</label>
-                  <select
-                    value={formData.color}
-                    onChange={(e) => setFormData({...formData, color: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="purple">Purple</option>
-                    <option value="red">Red</option>
-                    <option value="yellow">Yellow</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Default Commission (%)</label>
-                  <input
-                    type="number"
-                    value={formData.commission}
-                    onChange={(e) => setFormData({...formData, commission: parseFloat(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Default Credit Limit (AED)</label>
-                  <input
-                    type="number"
-                    value={formData.creditLimit}
-                    onChange={(e) => setFormData({...formData, creditLimit: parseInt(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  rows="3"
-                  placeholder="Enter role description"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">Permissions</label>
-                <div className="space-y-4">
-                  {Object.entries(permissionsByCategory).map(([category, permissions]) => (
-                    <div key={category} className="bg-gray-50 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-800 mb-3">{category}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {permissions.map(permission => (
-                          <label key={permission.id} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.permissions.includes(permission.id)}
-                              onChange={() => togglePermission(permission.id)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-gray-700">{permission.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 md:gap-4 pt-4 md:pt-6 border-t border-gray-200">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={onClose}
-                  className="px-4 py-2 md:px-6 md:py-3 border border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors font-medium text-sm md:text-base"
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
                 >
-                  Cancel
+                  <Download className="w-4 h-4" />
+                  Export
                 </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base"
-                  onClick={() => onClose()}
-                >
-                  {role ? 'Update Role' : 'Create Role'}
-                </motion.button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 md:mb-8"
-        >
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4 md:mb-6">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">B2B Users & Roles</h1>
-              <p className="text-sm md:text-lg text-gray-600">Manage B2B accounts, permissions, and partner relationships</p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full lg:w-auto mt-4 lg:mt-0">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowRoleModal(true)}
-                className="bg-white text-gray-700 px-4 py-2 md:px-6 md:py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 text-sm md:text-base"
-              >
-                <Shield className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="hidden sm:inline">Manage Roles</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base"
-              >
-                <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                Add B2B User
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 md:p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-xs md:text-sm font-medium">Total B2B Users</p>
-                  <p className="text-xl md:text-2xl font-bold">{b2bUsers.length}</p>
-                </div>
-                <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-200" />
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 md:p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-xs md:text-sm font-medium">Active Partners</p>
-                  <p className="text-xl md:text-2xl font-bold">{b2bUsers.filter(u => u.status === 'active').length}</p>
-                </div>
-                <UserCheck className="w-6 h-6 md:w-8 md:h-8 text-green-200" />
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 md:p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-xs md:text-sm font-medium">Premium Partners</p>
-                  <p className="text-xl md:text-2xl font-bold">{b2bUsers.filter(u => u.role === 'premium-partner').length}</p>
-                </div>
-                <Crown className="w-6 h-6 md:w-8 md:h-8 text-purple-200" />
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 md:p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-indigo-100 text-xs md:text-sm font-medium">API Enabled</p>
-                  <p className="text-xl md:text-2xl font-bold">{b2bUsers.filter(u => u.apiAccess).length}</p>
-                </div>
-                <Key className="w-6 h-6 md:w-8 md:h-8 text-indigo-200" />
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Tabs and Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-3xl shadow-lg p-4 md:p-6 mb-6 md:mb-8"
-        >
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'users', name: 'B2B Users', icon: Users },
-                { id: 'roles', name: 'Roles & Permissions', icon: Shield }
-              ].map(tab => {
-                const Icon = tab.icon;
-                return (
+                <Link href="/admin/b2b/add">
                   <motion.button
-                    key={tab.id}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 md:px-6 md:py-3 rounded-2xl font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
                   >
-                    <Icon className="w-4 h-4 md:w-5 md:h-5" />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
+                    <UserPlus className="w-4 h-4" />
+                    Add B2B User
                   </motion.button>
-                );
-              })}
-            </div>
-
-            {/* Search and Filters */}
-            {activeTab === 'users' && (
-              <div className="flex items-center gap-2 md:gap-3 w-full lg:w-auto mt-4 lg:mt-0">
-                <div className="relative flex-1 lg:flex-none">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search B2B users..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 pr-4 py-2 md:py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full lg:w-64"
-                  />
-                </div>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="bg-gray-100 text-gray-700 p-2 md:p-3 rounded-2xl hover:bg-gray-200 transition-all duration-300"
-                >
-                  <Filter className="w-4 h-4 md:w-5 md:h-5" />
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gray-100 text-gray-700 p-2 md:p-3 rounded-2xl hover:bg-gray-200 transition-all duration-300"
-                >
-                  <Download className="w-4 h-4 md:w-5 md:h-5" />
-                </motion.button>
+                </Link>
               </div>
-            )}
+            </div>
           </div>
-
-          {/* Advanced Filters */}
-          <AnimatePresence>
-            {showFilters && activeTab === 'users' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-3 py-2 md:px-4 md:py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="pending">Pending</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  
-                  <select className="px-3 py-2 md:px-4 md:py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
-                    <option>All Roles</option>
-                    {roles.map(role => (
-                      <option key={role.id} value={role.id}>{role.name}</option>
-                    ))}
-                  </select>
-                  
-                  <select className="px-3 py-2 md:px-4 md:py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
-                    <option>All Countries</option>
-                    <option>UAE</option>
-                    <option>UK</option>
-                    <option>India</option>
-                    <option>Germany</option>
-                  </select>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
-        {/* Content */}
-        {activeTab === 'users' && (
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Total Users</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {totalCount}
+                  </p>
+                </div>
+                <div className="bg-blue-500 p-3 rounded-xl">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Active Users</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {users.filter((u) => u.status === "active").length}
+                  </p>
+                </div>
+                <div className="bg-green-500 p-3 rounded-xl">
+                  <UserCheck className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">B2B Partners</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {users.filter((u) => u.role === "B2B").length}
+                  </p>
+                </div>
+                <div className="bg-purple-500 p-3 rounded-xl">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Total Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    AED{" "}
+                    {users
+                      .reduce((sum, u) => sum + (u.totalRevenue || 0), 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-emerald-500 p-3 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Main Table */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-3xl shadow-lg overflow-hidden  "
+            className="overflow-hidden grid grid-cols-1"
           >
-            {loading ? (
-              <div className="p-8 text-center">
-                <p>Loading users...</p>
-              </div>
-            ) : error ? (
-              <div className="p-8 text-center text-red-600">
-                <p>Error: {error}</p>
-              </div>
-            ) : (
-              <>
-                {/* Table wrapper with horizontal scrolling */}
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full  overflow-hidden">
-                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Company</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Contact</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Role</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Status</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Performance</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Commission</th>
-                        <th className="px-4 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-semibold text-gray-900 whitespace-nowrap">Actions</th>
-                      </tr>
-                    </thead>
+            <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+              {/* Table Header (kept functions) */}
+              <div className="p-4 md:p-6 border-b border-gray-200/50">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    {selectedUsers.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">
+                          {selectedUsers.length} selected
+                        </span>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          onClick={() => setShowBulkActions(!showBulkActions)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
+                        >
+                          Actions
+                        </motion.button>
+                      </div>
+                    )}
+                  </div>
 
-                    <tbody className="divide-y divide-gray-200">
-                      {currentUsers.length > 0 ? (
-                        currentUsers.map((user, index) => (
-                          <motion.tr
-                            key={user.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="hover:bg-gray-50 transition-all duration-200"
-                          >
-                            {/* Company */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-2 md:gap-3">
-                                <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <Building2 className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{user.name}</div>
-                                  <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                                    <Globe className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate">{user.country}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
+                  <div className="flex flex-wrap gap-4">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="pl-10 pr-4 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px] md:min-w-[260px]"
+                      />
+                    </div>
 
-                            {/* Contact */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <div className="min-w-0">
-                                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{user.contactPerson}</div>
-                                <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                                  <Mail className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{user.email}</span>
-                                </div>
-                                <div className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
-                                  <Phone className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{user.phone}</span>
-                                </div>
-                              </div>
-                            </td>
+                    {/* Role Filter */}
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => {
+                        setRoleFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="ADMIN">Admin</option>
+                      <option value="B2B">B2B Partner</option>
+                      <option value="CUSTOMER">Customer</option>
+                    </select>
 
-                            {/* Role */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                getRoleColor(user.role) === 'purple'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : getRoleColor(user.role) === 'blue'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {getRoleName(user.role)}
-                              </span>
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                                {getStatusIcon(user.status)}
-                                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                              </span>
-                            </td>
-
-                            {/* Performance */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <div>
-                                <div className="font-semibold text-gray-900 text-sm md:text-base">{formatNumber(user.totalBookings)} bookings</div>
-                                <div className="text-xs md:text-sm text-gray-600">{formatNumber(user.totalRevenue)} AED</div>
-                              </div>
-                            </td>
-
-                            {/* Commission */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <div className="font-semibold text-gray-900 text-sm md:text-base">{user.commission}%</div>
-                              <div className="text-xs text-gray-500 truncate">Manager: {user.accountManager}</div>
-                            </td>
-
-                            {/* Actions */}
-                            <td className="px-4 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                              <div className="flex gap-1 md:gap-2">
-                                <button className="p-1 md:p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-                                  <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                                </button>
-                                <button className="p-1 md:p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors">
-                                  <Eye className="w-3 h-3 md:w-4 md:h-4" />
-                                </button>
-                                <button className="p-1 md:p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                                  <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </motion.tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="7" className="px-6 py-8 md:py-10 text-center text-gray-500">
-                            <p className="font-medium text-sm md:text-base">No users available</p>
-                            <p className="text-xs md:text-sm text-gray-400">Start adding users to see them here.</p>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                    {/* Status Filter */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Blocked</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Pagination */}
-                {filteredUsers.length > usersPerPage && (
-                  <div className="px-4 py-3 md:px-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{' '}
-                      <span className="font-medium">
-                        {Math.min(indexOfLastUser, filteredUsers.length)}
-                      </span>{' '}
-                      of <span className="font-medium">{filteredUsers.length}</span> results
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === 'roles' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white rounded-3xl shadow-lg p-4 md:p-6"
-          >
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Role Management</h3>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setSelectedRole(null);
-                  setShowRoleModal(true);
-                }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base"
-              >
-                <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                Add Role
-              </motion.button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {roles.map((role) => (
-                <motion.div
-                  key={role.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-4 md:p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between mb-3 md:mb-4">
-                    <div className="flex items-center gap-2 md:gap-3">
-                      <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${
-                        role.color === 'purple' ? 'bg-purple-100' :
-                        role.color === 'blue' ? 'bg-blue-100' :
-                        'bg-green-100'
-                      }`}>
-                        <Shield className={`w-4 h-4 md:w-6 md:h-6 ${
-                          role.color === 'purple' ? 'text-purple-600' :
-                          role.color === 'blue' ? 'text-blue-600' :
-                          'text-green-600'
-                        }`} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 text-sm md:text-base">{role.name}</h4>
-                        <p className="text-xs md:text-sm text-gray-500">{role.userCount} users</p>
-                      </div>
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        setSelectedRole(role);
-                        setShowRoleModal(true);
-                      }}
-                      className="p-1 md:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+                {/* Bulk Actions */}
+                <AnimatePresence>
+                  {showBulkActions && selectedUsers.length > 0 && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-200"
                     >
-                      <Settings className="w-3 h-3 md:w-4 md:h-4" />
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm font-medium text-gray-700">
+                          Bulk Actions:
+                        </span>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleBulkAction("activate")}
+                          disabled={bulkActionLoading}
+                          className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors disabled:opacity-50"
+                        >
+                          Activate All
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleBulkAction("block")}
+                          disabled={bulkActionLoading}
+                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
+                        >
+                          Block All
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleBulkAction("delete")}
+                          disabled={bulkActionLoading}
+                          className="px-3 py-1 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors disabled:opacity-50"
+                        >
+                          Delete All
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px]">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50/50">
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedUsers.length === users.length &&
+                            users.length > 0
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers(users.map((u) => u.id));
+                            } else {
+                              setSelectedUsers([]);
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        User
+                      </th>
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        Role
+                      </th>
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        Status
+                      </th>
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        Statistics
+                      </th>
+                      <th className="py-3 px-3 text-left text-xs md:text-sm font-semibold text-gray-700">
+                        Joined
+                      </th>
+                      <th className="py-3 px-3 text-center text-xs md:text-sm font-semibold text-gray-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {users.map((user) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-gradient-to-r hover:from-violet-50 hover:to-indigo-50 transition-all duration-300"
+                      >
+                        <td className="py-3 px-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUsers([...selectedUsers, user.id]);
+                              } else {
+                                setSelectedUsers(
+                                  selectedUsers.filter((id) => id !== user.id)
+                                );
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
+                              {user.name
+                                ? user.name.charAt(0).toUpperCase()
+                                : user.email.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {user.name ||
+                                  `${user.firstName} ${user.lastName}` ||
+                                  user.email}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            {getRoleIcon(user.role)}
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadge(
+                                user.role
+                              )}`}
+                            >
+                              {user.role}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              user.status === "active"
+                            )}`}
+                          >
+                            {user.status === "active" ? "Active" : "Blocked"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              {user.totalBookings || 0} bookings
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              AED {(user.totalRevenue || 0).toLocaleString()}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="text-sm text-gray-600 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(user.registeredDate).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => loadUserDetails(user.id)}
+                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() =>
+                                handleUserAction(user.id, "toggleStatus")
+                              }
+                              className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-colors"
+                              title={
+                                user.isActive ? "Block User" : "Activate User"
+                              }
+                            >
+                              {user.isActive ? (
+                                <Ban className="w-4 h-4" />
+                              ) : (
+                                <UserCheck className="w-4 h-4" />
+                              )}
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() =>
+                                handleUserAction(user.id, "delete")
+                              }
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowAssignManagerModal(true);
+                              }}
+                              className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
+                              title="Assign Account Manager"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                    {!users.length && (
+                      <tr>
+                        <td colSpan="7" className="py-8 md:py-12 text-center">
+                          <div className="text-gray-500">
+                            <div className="text-4xl md:text-6xl mb-2 md:mb-4">
+                              👥
+                            </div>
+                            <div className="text-base md:text-lg">
+                              No users found
+                            </div>
+                            <div className="text-xs md:text-sm">
+                              Try adjusting your search or filters
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination (untouched, just padding/fonts) */}
+              {users.length > 0 && (
+                <div className="p-4 md:p-6 border-t border-gray-200/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-gray-600">
+                    Showing {users.length} of {totalCount} users
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => fetchUsers(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 bg-white border border-gray-200 rounded-lg disabled:opacity-50"
+                    >
+                      Previous
+                    </motion.button>
+                    <span className="text-sm text-gray-600">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => fetchUsers(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 bg-white border border-gray-200 rounded-lg disabled:opacity-50"
+                    >
+                      Next
                     </motion.button>
                   </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
 
-                  <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">{role.description}</p>
+        {/* User Detail Modal */}
+        <AnimatePresence>
+          {showUserModal && selectedUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
+              onClick={() => setShowUserModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-gradient-to-br from-white to-blue-50 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto shadow-2xl border border-blue-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-t-2xl text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white/20 rounded-full">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-2xl font-bold">User Profile</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowUserModal(false)}
+                      className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                    >
+                      <XCircle className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                      {selectedUser.user.firstName?.charAt(0) ||
+                        selectedUser.user.email?.charAt(0) ||
+                        "U"}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold">
+                        {`${selectedUser.user.firstName} ${selectedUser.user.lastName}` ||
+                          selectedUser.user.email ||
+                          "Unknown User"}
+                      </h2>
+                      <p className="text-blue-100 flex items-center gap-1">
+                        <Mail className="w-4 h-4" />
+                        {selectedUser.user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="space-y-2 md:space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs md:text-sm text-gray-500">Commission</span>
-                      <span className="text-xs md:text-sm font-semibold text-gray-900">{role.commission}%</span>
+                <div className="p-6">
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                      <p className="text-sm text-blue-600 font-medium">
+                        Total Bookings
+                      </p>
+                      <p className="text-2xl font-bold text-blue-800">
+                        {selectedUser.statistics.totalBookings ?? 0}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs md:text-sm text-gray-500">Credit Limit</span>
-                      <span className="text-xs md:text-sm font-semibold text-gray-900">{formatNumber(role.creditLimit)} AED</span>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+                      <p className="text-sm text-green-600 font-medium">
+                        Total Revenue
+                      </p>
+                      <p className="text-2xl font-bold text-green-800">
+                        AED{" "}
+                        {(
+                          selectedUser.statistics.totalRevenue ?? 0
+                        ).toLocaleString()}
+                      </p>
                     </div>
-                    <div className="border-t border-gray-100 pt-2 md:pt-3">
-                      <p className="text-xs text-gray-500 mb-1 md:mb-2">Permissions ({role.permissions.length})</p>
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.slice(0, 3).map((permissionId) => {
-                          const permission = allPermissions.find(p => p.id === permissionId);
-                          return (
-                            <span key={permissionId} className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                              {permission?.name}
-                            </span>
-                          );
-                        })}
-                        {role.permissions.length > 3 && (
-                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                            +{role.permissions.length - 3} more
-                          </span>
-                        )}
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
+                      <p className="text-sm text-purple-600 font-medium">
+                        User Role
+                      </p>
+                      <p className="text-lg font-bold text-purple-800 capitalize">
+                        {selectedUser.user.role?.toLowerCase()}
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-100">
+                      <p className="text-sm text-amber-600 font-medium">
+                        Status
+                      </p>
+                      <p className="text-lg font-bold text-amber-800 capitalize">
+                        {selectedUser.user.isActive ? "Active" : "Inactive"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Account Manager */}
+                  {selectedUser.user.accountManager?.name && (
+                    <div className="mb-6">
+                      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm text-indigo-600 font-medium">
+                              Account Manager
+                            </p>
+                            <p className="text-lg font-bold text-indigo-800">
+                              {selectedUser.user.accountManager.name}
+                            </p>
+                            <p className="text-sm text-indigo-500">
+                              {selectedUser.user.accountManager.email}
+                            </p>
+                          </div>
+                          <div className="p-2 bg-indigo-100 rounded-lg">
+                            <UserCheck className="w-5 h-5 text-indigo-600" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <User className="w-5 h-5 text-blue-600" /> Personal
+                        Information
+                      </h4>
+                      <div className="space-y-3">
+                        <InfoRow
+                          icon={Mail}
+                          label="Email"
+                          value={selectedUser.user.email}
+                        />
+                        <InfoRow
+                          icon={Phone}
+                          label="Phone"
+                          value={selectedUser.user.phoneNumber}
+                        />
+                        <InfoRow
+                          icon={MapPin}
+                          label="Country"
+                          value={selectedUser.user.nationality}
+                        />
+                        <InfoRow
+                          icon={Calendar}
+                          label="Registered Date"
+                          value={new Date(
+                            selectedUser.user.createdAt
+                          ).toLocaleDateString()}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-purple-600" /> Account
+                        Information
+                      </h4>
+                      <div className="space-y-3">
+                        <InfoRow
+                          icon={Shield}
+                          label="Role"
+                          value={selectedUser.user.role}
+                        />
+                        <InfoRow
+                          icon={
+                            selectedUser.user.isActive ? CheckCircle : XCircle
+                          }
+                          label="Status"
+                          value={
+                            selectedUser.user.isActive ? "Active" : "Inactive"
+                          }
+                        />
+                                                <InfoRow
+                          icon={Shield}
+                          label="User ID"
+                          value={selectedUser.user.id}
+                        />
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
 
-        {/* Modals */}
-        <UserModal
-          show={showAddModal}
-          onClose={() => {
-            setShowAddModal(false);
-            setSelectedUser(null);
-          }}
-          user={selectedUser}
-          title={selectedUser ? 'Edit B2B User' : 'Add New B2B User'}
-        />
-        
-        <RoleModal
-          show={showRoleModal}
-          onClose={() => {
-            setShowRoleModal(false);
-            setSelectedRole(null);
-          }}
-          role={selectedRole}
-          title={selectedRole ? 'Edit Role' : 'Create New Role'}
-        />
+                  <div className="flex gap-3 pt-6 border-t border-gray-200">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" /> Edit Profile
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                      onClick={() => setShowUserModal(false)}
+                    >
+                      <XCircle className="w-4 h-4" /> Close
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Assign Manager Modal */}
+        <AnimatePresence>
+          {showAssignManagerModal && selectedUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
+              onClick={() => setShowAssignManagerModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-2xl w-full max-w-md p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Assign Account Manager
+                  </h3>
+                  <button
+                    onClick={() => setShowAssignManagerModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Assigning manager for:{" "}
+                    <strong>{selectedUser.name || selectedUser.email}</strong>
+                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Account Manager
+                  </label>
+                  <select
+                    value={selectedManager}
+                    onChange={(e) => setSelectedManager(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a manager</option>
+                    {managers.map((manager) => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.name} - {manager.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleAssignManager(selectedUser.id)}
+                    disabled={!selectedManager}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Assign Manager
+                  </button>
+                  <button
+                    onClick={() => setShowAssignManagerModal(false)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
 };
 
-export default B2BPage;
+export default UsersManagement;

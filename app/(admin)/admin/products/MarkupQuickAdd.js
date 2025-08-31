@@ -9,7 +9,7 @@ export default function MarkupQuickAdd({ onAdd }) {
   const [loading, setLoading] = useState(false);
 
   async function handleAdd() {
-    if (!pct || isNaN(pct) || Number(pct) < 0) {
+    if (!pct || isNaN(pct) ) {
       alert('Please enter a valid percentage');
       return;
     }
@@ -54,8 +54,7 @@ export default function MarkupQuickAdd({ onAdd }) {
         <input 
           placeholder="% Markup *" 
           type="number"
-          min="0"
-          step="0.01"
+          step="0.5"
           className="border-2 border-orange-200 rounded-lg md:rounded-xl p-2 w-full md:w-28 text-xs md:text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" 
           value={pct} 
           onChange={e => setPct(e.target.value)}

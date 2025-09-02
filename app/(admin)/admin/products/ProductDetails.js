@@ -80,8 +80,8 @@ export default function ProductDetails({ product, onClose, onEdit }) {
               />
               
               <DetailField
-                label="Type"
-                value={product.type?.replace('_', ' ') || 'N/A'}
+                label="Category"
+                value={product.category.name || 'N/A'}
               />
               
               <DetailField

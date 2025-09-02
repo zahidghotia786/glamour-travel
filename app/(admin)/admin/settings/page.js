@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
           adminName: `${adminProfile.firstName} ${adminProfile.lastName}`.trim(),
           adminEmail: adminProfile.email,
           adminPhone: adminProfile.phoneNumber,
-          adminPosition: adminProfile.metadata?.position || "Administrator",
+          adminPosition: adminProfile.role,
           defaultB2BDiscount: adminSettings.defaultB2BDiscount,
           b2bCreditLimit: adminSettings.b2bCreditLimit,
           b2bAutoApprove: adminSettings.b2bAutoApprove,
@@ -76,7 +76,10 @@ export default function AdminSettingsPage() {
           adminName: settings.adminName,
           adminEmail: settings.adminEmail,
           adminPhone: settings.adminPhone,
-          adminPosition: settings.adminPosition
+          adminPosition: settings.adminPosition,
+                  metadata: {
+          position: settings.adminPosition
+        }
         });
         toast.success("Profile updated successfully!");
       } else if (activeTab === "b2b") {

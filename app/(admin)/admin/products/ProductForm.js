@@ -1,17 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { adminCreateProduct, adminUpdateProduct } from "@/lib/api";
+import { adminCreateProduct, adminUpdateProduct, adminApi } from "@/lib/api";
 
 const emptyForm = {
-  name: "", type: "THEME_PARK", shortDesc: "", longDesc: "",
-  baseCurrency: "AED", basePrice: 0, isActive: true,
+  name: "", 
+  type: "THEME_PARK", 
+  shortDesc: "", 
+  longDesc: "",
+  baseCurrency: "AED", 
+  basePrice: 0, 
+  isActive: true,
   images: [{ url: "", alt: "" }],
+  categoryId: "", // Added categoryId field
 };
 
 export default function ProductForm({ product, onClose, onSuccess }) {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const response = await adminApi.categories.getAll();
+      setCategories(response.data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      alert('Failed to fetch categories');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     if (product) {
@@ -23,6 +48,7 @@ export default function ProductForm({ product, onClose, onSuccess }) {
         baseCurrency: product.baseCurrency,
         basePrice: product.basePrice,
         isActive: product.isActive,
+        categoryId: product.categoryId || "", // Set categoryId if exists
         images: (product.images?.length ? product.images : [{ url: "", alt: "" }]).map(i => ({ url: i.url, alt: i.alt || "" })),
       });
     } else {
@@ -41,7 +67,8 @@ export default function ProductForm({ product, onClose, onSuccess }) {
       const payload = { 
         ...form, 
         basePrice: Number(form.basePrice), 
-        images: form.images.filter(i => i.url) 
+        images: form.images.filter(i => i.url),
+        categoryId: form.categoryId || null, // Ensure categoryId is null if empty
       };
       
       if (product) {
@@ -88,13 +115,36 @@ export default function ProductForm({ product, onClose, onSuccess }) {
               onChange={handleChange} 
               required 
             />
-            <Select 
-              name="type" 
-              label="Product Type" 
-              value={form.type} 
-              onChange={handleChange}
-              options={["THEME_PARK", "TOUR", "ACTIVITY"]} 
-            />
+
+            
+            {/* Category Select Field */}
+            <div className="">
+              <label className="space-y-1 md:space-y-2">
+                <span className="text-xs md:text-sm font-semibold text-gray-700">
+                  Category
+                </span>
+                {categoriesLoading ? (
+                  <div className="border-2 border-gray-200 rounded-lg md:rounded-xl p-2 md:p-3 text-sm md:text-base text-gray-500">
+                    Loading categories...
+                  </div>
+                ) : (
+                  <select 
+                    name="categoryId" 
+                    value={form.categoryId} 
+                    onChange={handleChange}
+                    className="w-full border-2 border-gray-200 rounded-lg md:rounded-xl p-2 md:p-3 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all duration-200 text-sm md:text-base"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.icon} {category.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </label>
+            </div>
+            
             <Select 
               name="baseCurrency" 
               label="Currency" 
@@ -211,7 +261,7 @@ export default function ProductForm({ product, onClose, onSuccess }) {
   );
 }
 
-// Form Components
+// Form Components (unchanged)
 function Text({ label, name, value, onChange, type="text", className="", required = false }) {
   return (
     <label className={`space-y-1 md:space-y-2 ${className}`}>

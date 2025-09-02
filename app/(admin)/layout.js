@@ -19,6 +19,7 @@ import {
   HelpCircle,
   ChevronDown,
   LogOut,
+  List,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Toaster } from "react-hot-toast";
@@ -120,8 +121,10 @@ export default function AdminLayout({ children }) {
           {[
             { href: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
             { href: "/admin/bookings", icon: FileText, label: "Bookings" },
+          { href: "/admin/category", icon: List, label: "Add Categories" },
             { href: "/admin/products", icon: ShoppingBag, label: "Products" },
-            { href: "/admin/b2b", icon: Users, label: "B2B Users & Roles" },
+            { href: "/admin/b2b", icon: Users, label: "B2B Users & Admins" },
+            { href: "/admin/b2c", icon: Users, label: "B2C Users" },
             { href: "/admin/tickets-api", icon: Network, label: "Tickets API" },
             {
               href: "/admin/hotels",

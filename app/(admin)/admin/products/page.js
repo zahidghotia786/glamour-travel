@@ -22,7 +22,7 @@ export default function AdminProductsPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("products"); // ADDED: Tab state
-
+console.log(products, "products")
   async function load() {
     setLoading(true);
     try {
@@ -187,7 +187,7 @@ export default function AdminProductsPage() {
                   <table className="w-full min-w-[800px]">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        {["Name", "Type", "Base Price", "Markups", "Status", "Images", "Actions"].map((header) => (
+                        {["Name", "Category", "Base Price", "Markups", "Status", "Images", "Actions"].map((header) => (
                           <th
                             key={header}
                             className="py-3 px-2 md:py-4 md:px-3 text-left text-xs md:text-sm font-semibold text-gray-700"
@@ -221,7 +221,7 @@ export default function AdminProductsPage() {
                                   'bg-green-100 text-green-700'
                                 }`}
                               >
-                                {p.type.replace('_', ' ')}
+                                {p.category.name}
                               </span>
                             </td>
                             <td className="py-3 px-2 md:py-4 md:px-3">

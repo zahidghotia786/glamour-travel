@@ -4,16 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   UserCheck,
-  UserX,
   Search,
-  Filter,
-  Plus,
-  MoreVertical,
   Eye,
   Edit,
   Trash2,
   Download,
-  Upload,
   RefreshCw,
   Calendar,
   Mail,
@@ -24,18 +19,14 @@ import {
   User,
   CheckCircle,
   XCircle,
-  AlertTriangle,
-  Clock,
   DollarSign,
   TrendingUp,
   Settings,
   Ban,
-  UserPlus,
 } from "lucide-react";
-import { adminApi, handleApiError, toastConfig } from "@/lib/api";
+import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
-import Link from "next/link";
 
 const UsersManagement = () => {
   // State management
@@ -49,7 +40,6 @@ const UsersManagement = () => {
 
   // Filters and search
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("registeredDate");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -57,7 +47,6 @@ const UsersManagement = () => {
   // Modal states
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
 
   // Add b2b mnanager assignment modal state
@@ -78,7 +67,7 @@ const UsersManagement = () => {
           page,
           limit: 20,
           search: searchTerm,
-          role: roleFilter !== "all" ? roleFilter : undefined,
+          role: "CUSTOMER", // Force role to CUSTOMER only
           status: statusFilter !== "all" ? statusFilter : undefined,
           sortBy,
           sortOrder,
@@ -103,7 +92,7 @@ const UsersManagement = () => {
         if (showLoading) setLoading(false);
       }
     },
-    [searchTerm, roleFilter, statusFilter, sortBy, sortOrder]
+    [searchTerm, statusFilter, sortBy, sortOrder] // Removed roleFilter from dependencies
   );
 
   // Initial load and refresh on filter changes
@@ -233,7 +222,7 @@ const UsersManagement = () => {
   // Call this in useEffect
   useEffect(() => {
     fetchUsers(1);
-    fetchAccountManagers(); // Add this line
+    fetchAccountManagers();
   }, [fetchUsers]);
 
   // Load user details
@@ -344,10 +333,10 @@ const UsersManagement = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Users Management
+                  Customers Management
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Manage all platform users and their permissions
+                  Manage all customer accounts and their data
                 </p>
               </div>
 
@@ -374,17 +363,6 @@ const UsersManagement = () => {
                   <Download className="w-4 h-4" />
                   Export
                 </motion.button>
-
-                <Link href="/admin/b2b/add">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Add B2B User
-                  </motion.button>
-                </Link>
               </div>
             </div>
           </div>
@@ -426,25 +404,6 @@ const UsersManagement = () => {
                 </div>
                 <div className="bg-green-500 p-3 rounded-xl">
                   <UserCheck className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm">B2B Partners</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {users.filter((u) => u.role === "B2B").length}
-                  </p>
-                </div>
-                <div className="bg-purple-500 p-3 rounded-xl">
-                  <Shield className="w-6 h-6 text-white" />
                 </div>
               </div>
             </motion.div>
@@ -515,21 +474,6 @@ const UsersManagement = () => {
                         className="pl-10 pr-4 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px] md:min-w-[260px]"
                       />
                     </div>
-
-                    {/* Role Filter */}
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => {
-                        setRoleFilter(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="px-3 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="B2B">B2B Partner</option>
-                      <option value="CUSTOMER">Customer</option>
-                    </select>
 
                     {/* Status Filter */}
                     <select
@@ -765,21 +709,6 @@ const UsersManagement = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </motion.button>
-                       
-                              {/* assign account manager button (commented out for now)  */}
-                              
-                            {/* <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowAssignManagerModal(true);
-                              }}
-                              className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Assign Account Manager"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                            </motion.button> */}
                           </div>
                         </td>
                       </motion.tr>
@@ -1010,7 +939,7 @@ const UsersManagement = () => {
                             selectedUser.user.isActive ? "Active" : "Inactive"
                           }
                         />
-                                                <InfoRow
+                        <InfoRow
                           icon={Shield}
                           label="User ID"
                           value={selectedUser.user.id}
@@ -1030,78 +959,6 @@ const UsersManagement = () => {
                       <XCircle className="w-4 h-4" /> Close
                     </motion.button>
                   </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Assign Manager Modal */}
-        <AnimatePresence>
-          {showAssignManagerModal && selectedUser && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
-              onClick={() => setShowAssignManagerModal(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-white rounded-2xl w-full max-w-md p-6"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Assign Account Manager
-                  </h3>
-                  <button
-                    onClick={() => setShowAssignManagerModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Assigning manager for:{" "}
-                    <strong>{selectedUser.name || selectedUser.email}</strong>
-                  </p>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Account Manager
-                  </label>
-                  <select
-                    value={selectedManager}
-                    onChange={(e) => setSelectedManager(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select a manager</option>
-                    {managers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>
-                        {manager.name} - {manager.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleAssignManager(selectedUser.id)}
-                    disabled={!selectedManager}
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Assign Manager
-                  </button>
-                  <button
-                    onClick={() => setShowAssignManagerModal(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
                 </div>
               </motion.div>
             </motion.div>

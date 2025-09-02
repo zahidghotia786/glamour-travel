@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { Search, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+
 const SearchWithCalendar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
@@ -74,34 +75,44 @@ const SearchWithCalendar = () => {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-<div className="h-max pt-10 pb-10 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-4xl mx-auto w-full border border-white/10 p-6 rounded-3xl shadow-2xl bg-gradient-to-r from-cyan-700/10 via-blue-700/10 to-purple-700/10 backdrop-blur-lg">
+    <div className=" pt-10 pb-10 bg-white flex items-center justify-center p-4">
+      <div className="max-w-4xl mx-auto w-full border border-gray-200 p-4 md:p-6 rounded-3xl shadow-lg bg-white">
         {/* Main Search Container */}
-        <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-8 shadow-2xl border border-white/20">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
+
+<div className="text-center max-w-3xl mx-auto px-4 py-12">
+ 
+  <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
+    Find and book the best tickets for attractions, tours, and activities in Dubai. 
+    Select your date and explore the wonders of this magnificent city.
+  </p>
+</div>
+
+
+        <div className="bg-white rounded-3xl p-4 md:p-8 shadow-md border border-gray-200">
+          <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6">
             {/* Search Input */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 " />
+            <div className="flex-1 relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search destinations, theme parks, attractions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 outline-none rounded-2xl bg-white/15 backdrop-blur-xl border border-white/30 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-lg transition-all duration-300"
+                className="w-full pl-10 pr-4 py-3 md:py-4 outline-none rounded-2xl bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-base transition-all duration-300"
               />
             </div>
             
             {/* Date Picker */}
-            <div className="relative">
+            <div className="relative w-full lg:w-auto">
               <button
                 onClick={() => setShowCalendar(!showCalendar)}
-                className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-xl border border-white/30 focus:ring-2 focus:ring-cyan-400  hover:bg-white/20 transition-all duration-300 min-w-[200px]"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 md:py-4 rounded-2xl bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400 hover:bg-gray-100 transition-all duration-300"
               >
-                <Calendar className="w-5 h-5 text-cyan-300" />
-                <span className="">{formatDate(selectedDate)}</span>
+                <Calendar className="w-5 h-5 text-blue-500" />
+                <span className="text-gray-700">{formatDate(selectedDate)}</span>
               </button>
 
-              {/* Calendar Dropdown - Fixed positioning */}
+              {/* Calendar Dropdown */}
               {showCalendar && (
                 <>
                   {/* Backdrop overlay */}
@@ -111,55 +122,55 @@ const SearchWithCalendar = () => {
                   />
                   
                   {/* Calendar */}
-                  <div className="absolute top-full mt-3 right-0 bg-gradient-to-r from-cyan-700/90 via-blue-700/90 to-purple-700 rounded-3xl shadow-2xl border border-white/20 p-6 z-50 min-w-[350px]">
+                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 md:p-6 z-50 w-full max-w-xs md:w-[300px]">
                     {/* Calendar Header */}
-                    <div className="flex items-center justify-between mb-6  text-white">
+                    <div className="flex items-center justify-between mb-4 text-gray-800">
                       <button
                         onClick={() => navigateMonth(-1)}
-                        className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 /80 hover:"
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
-                      <h3 className="font-bold text-lg ">
+                      <h3 className="font-bold text-base md:text-lg">
                         {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                       </h3>
                       <button
                         onClick={() => navigateMonth(1)}
-                        className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 /80 hover:"
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
 
                     {/* Day Names */}
-                    <div className="grid grid-cols-7 gap-2 mb-3">
+                    <div className="grid grid-cols-7 gap-1 mb-2">
                       {dayNames.map(day => (
-                        <div key={day} className="p-2 text-center text-sm font-semibold text-cyan-300">
+                        <div key={day} className="p-1 text-center text-xs font-semibold text-gray-500">
                           {day}
                         </div>
                       ))}
                     </div>
 
                     {/* Calendar Days */}
-                    <div className="grid grid-cols-7 gap-2 text-white">
+                    <div className="grid grid-cols-7 gap-1 text-gray-800">
                       {getDaysInMonth(currentMonth).map((date, index) => (
                         <button
                           key={index}
                           onClick={() => date && handleDateSelect(date)}
                           disabled={!date || date < new Date().setHours(0,0,0,0)}
                           className={`
-                            p-2 text-sm rounded-xl transition-all duration-200 relative font-medium
+                            p-1 md:p-2 text-xs md:text-sm rounded-lg transition-all duration-200 relative font-medium
                             ${!date ? 'invisible' : ''}
                             ${date && date < new Date().setHours(0,0,0,0) 
-                              ? '/30 cursor-not-allowed' 
-                              : 'hover:bg-gradient-to-r hover:from-cyan-500/30 hover:to-purple-500/30 cursor-pointer /90 hover: hover:scale-105'
+                              ? 'text-gray-300 blur-[1px] cursor-not-allowed' 
+                              : 'hover:bg-blue-50 cursor-pointer hover:scale-105 text-gray-700'
                             }
                             ${isSameDate(date, selectedDate) 
-                              ? 'bg-gradient-to-r from-cyan-500 to-purple-500  shadow-lg scale-105' 
+                              ? 'bg-blue-500 text-white shadow-md scale-105' 
                               : ''
                             }
                             ${isToday(date) && !isSameDate(date, selectedDate)
-                              ? 'bg-white/20 text-cyan-300 font-bold border border-cyan-400/50' 
+                              ? 'bg-blue-100 text-blue-600 font-bold border border-blue-300' 
                               : ''
                             }
                           `}
@@ -170,11 +181,11 @@ const SearchWithCalendar = () => {
                     </div>
 
                     {/* Quick Select Options */}
-                    <div className="mt-6 pt-4 border-t border-white/20">
-                      <div className="flex flex-wrap gap-3">
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => handleDateSelect(new Date())}
-                          className="px-4 py-2 text-sm bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 rounded-xl hover:from-cyan-500/30 hover:to-blue-500/30 transition-all duration-200 border border-cyan-400/30 hover:scale-105"
+                          className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all duration-200 border border-blue-200"
                         >
                           Today
                         </button>
@@ -184,7 +195,7 @@ const SearchWithCalendar = () => {
                             tomorrow.setDate(tomorrow.getDate() + 1);
                             handleDateSelect(tomorrow);
                           }}
-                          className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 rounded-xl hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 border border-purple-400/30 hover:scale-105"
+                          className="px-3 py-1 text-xs bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all duration-200 border border-purple-200"
                         >
                           Tomorrow
                         </button>
@@ -196,8 +207,8 @@ const SearchWithCalendar = () => {
             </div>
 
             {/* Search Button */}
-            <button className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white font-bold px-8 py-4 rounded-2xl shadow-2xl hover:shadow-cyan-500/25 transition-all duration-300 flex items-center gap-3 hover:scale-105 hover:from-cyan-400 hover:via-blue-400 hover:to-purple-400">
-              <Search className="w-5 h-5" />
+            <button className="w-full lg:w-auto bg-blue-500 text-white font-medium px-6 py-3 md:py-4 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 hover:bg-blue-600">
+              <Search className="w-4 h-4 md:w-5 md:h-5" />
               Search
             </button>
           </div>
@@ -205,24 +216,22 @@ const SearchWithCalendar = () => {
 
         {/* Display Selected Information */}
         {(searchQuery || selectedDate) && (
-          <div className="mt-6 bg-white/10 backdrop-blur-2xl rounded-2xl p-6 shadow-xl border border-white/20">
-            <h3 className="font-bold  mb-4 text-lg">Search Parameters:</h3>
-            <div className="flex flex-wrap gap-3 text-sm">
+          <div className="mt-4 md:mt-6 bg-gray-50 rounded-2xl p-4 md:p-6 shadow-sm border border-gray-200">
+            <h3 className="font-bold text-gray-800 mb-2 md:mb-4 text-base md:text-lg">Search Parameters:</h3>
+            <div className="flex flex-wrap gap-2 text-sm">
               {searchQuery && (
-                <span className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-600 font-bold px-4 py-2 rounded-full border border-cyan-400/30 backdrop-blur-xl">
-                  <span className="text-cyan-700">Query :</span> {searchQuery}
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+                  <span className="font-semibold">Query:</span> {searchQuery}
                 </span>
               )}
               {selectedDate && (
-                <span className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 font-bold px-4 py-2 rounded-full border border-purple-400/30 backdrop-blur-xl">
-                  <span className="text-purple-700 font-bold">Date :</span> {formatDate(selectedDate)}
+                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full border border-purple-200">
+                  <span className="font-semibold">Date:</span> {formatDate(selectedDate)}
                 </span>
               )}
             </div>
           </div>
         )}
-
-
       </div>
     </div>
   );

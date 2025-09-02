@@ -315,7 +315,7 @@ export default function Footer() {
         <p className="text-xs text-gray-500 mt-1">
           Licensed Travel Agency | Dubai Tourism Licensed
         </p>
-<p className="text-xs text-gray-500 mt-1">
+{/* <p className="text-xs text-gray-500 mt-1">
   Developed by{" "}
   <a
     href="https://zahidghotia.vercel.app/" 
@@ -325,7 +325,7 @@ export default function Footer() {
   >
     ZG.dev
   </a>
-</p>
+</p> */}
 
       </div>
 

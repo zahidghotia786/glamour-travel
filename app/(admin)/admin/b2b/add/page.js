@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   UserPlus,
@@ -12,18 +12,24 @@ import {
   Phone,
   Building,
   FileText,
-  CreditCard,
   Shield,
-  Loader
+  Save,
+  Percent,
+  DollarSign
 } from "lucide-react";
 import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
+import Loader from "@/components/common/Loader";
 
 export default function AddB2BUserPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
   const [loadingManagers, setLoadingManagers] = useState(true);
+  const [loadingUserData, setLoadingUserData] = useState(false);
   const [accountManagers, setAccountManagers] = useState([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [userId, setUserId] = useState(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -31,35 +37,78 @@ export default function AddB2BUserPage() {
     phoneNumber: "",
     companyName: "",
     businessLicense: "",
-    creditLimit: 50000,
-    accountManagerId: ""
+    accountManagerId: "",
+    markupType: "percentage",
+    markupValue: 0
   });
 
-  // Fetch account managers on component mount
+  // Check if we're in edit mode and fetch user data if needed
   useEffect(() => {
-    const fetchAccountManagers = async () => {
-      try {
-        setLoadingManagers(true);
-        const response = await adminApi.getUsers();
-        setAccountManagers(response.users || response.data || []);
-      } catch (error) {
-        console.error('Failed to fetch account managers:', error);
-        toast.error('Failed to load account managers');
-      } finally {
-        setLoadingManagers(false);
-      }
-    };
+    const edit = searchParams.get('edit');
+    const id = searchParams.get('id');
+    
+    if (edit === 'true' && id) {
+      setIsEditMode(true);
+      setUserId(id);
+      fetchUserData(id);
+    }
 
     fetchAccountManagers();
-  }, []);
+  }, [searchParams]);
+
+  const fetchAccountManagers = async () => {
+    try {
+      setLoadingManagers(true);
+      const response = await adminApi.getUsers();
+      setAccountManagers(response.users || response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch account managers:', error);
+      toast.error('Failed to load account managers');
+    } finally {
+      setLoadingManagers(false);
+    }
+  };
+
+  const fetchUserData = async (id) => {
+    try {
+      setLoadingUserData(true);
+      const response = await adminApi.getUserDetails(id);
+      const user = response.user || response;
+      
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        companyName: user.companyName || "",
+        businessLicense: user.businessLicense || "",
+        creditLimit: user.creditLimit || 50000,
+        accountManagerId: user.accountManagerId || "",
+        markupType: user.markupType || "percentage",
+        markupValue: user.markupValue || 0
+      });
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      toast.error('Failed to load user data');
+    } finally {
+      setLoadingUserData(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCreatingUser(true);
 
     try {
-      const response = await adminApi.createB2BUser(formData);
-      toast.success("B2B user created successfully!");
+      if (isEditMode) {
+        // Update existing user
+        const response = await adminApi.updateB2BUser(userId, formData);
+        toast.success("B2B user updated successfully!");
+      } else {
+        // Create new user
+        const response = await adminApi.createB2BUser(formData);
+        toast.success("B2B user created successfully!");
+      }
       
       // Redirect back to users management
       router.push("/admin/b2b");
@@ -78,6 +127,20 @@ export default function AddB2BUserPage() {
     }));
   };
 
+  const handleMarkupTypeChange = (type) => {
+    setFormData(prev => ({
+      ...prev,
+      markupType: type,
+      markupValue: 0 // Reset value when changing type
+    }));
+  };
+
+  if (loadingUserData) {
+    return (
+   <Loader />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
@@ -93,10 +156,13 @@ export default function AddB2BUserPage() {
           </motion.button>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Add New B2B User
+              {isEditMode ? 'Edit B2B User' : 'Add New B2B User'}
             </h1>
             <p className="text-gray-600 mt-1">
-              Create a new B2B partner account with special pricing and features
+              {isEditMode 
+                ? 'Update B2B partner account information'
+                : 'Create a new B2B partner account with special pricing and features'
+              }
             </p>
           </div>
         </div>
@@ -111,9 +177,11 @@ export default function AddB2BUserPage() {
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-full">
-                <UserPlus className="w-6 h-6" />
+                {isEditMode ? <Save className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />}
               </div>
-              <h2 className="text-xl font-semibold">B2B User Information</h2>
+              <h2 className="text-xl font-semibold">
+                {isEditMode ? 'Edit User Information' : 'B2B User Information'}
+              </h2>
             </div>
           </div>
 
@@ -168,7 +236,13 @@ export default function AddB2BUserPage() {
                   onChange={handleInputChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   placeholder="Enter email address"
+                  disabled={isEditMode}
                 />
+                {isEditMode && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Email cannot be changed
+                  </p>
+                )}
               </div>
 
               {/* Phone Number */}
@@ -221,22 +295,71 @@ export default function AddB2BUserPage() {
                 />
               </div>
 
-              {/* Credit Limit */}
+
+              {/* Markup Type */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Markup Type *
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="markupType"
+                      value="percentage"
+                      checked={formData.markupType === "percentage"}
+                      onChange={() => handleMarkupTypeChange("percentage")}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <Percent className="w-4 h-4" />
+                    Percentage (%)
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="markupType"
+                      value="fixed"
+                      checked={formData.markupType === "fixed"}
+                      onChange={() => handleMarkupTypeChange("fixed")}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <DollarSign className="w-4 h-4" />
+                    Fixed Amount (AED)
+                  </label>
+                </div>
+              </div>
+
+              {/* Markup Value */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Credit Limit (AED) *
+                  {formData.markupType === "percentage" ? (
+                    <Percent className="w-4 h-4" />
+                  ) : (
+                    <DollarSign className="w-4 h-4" />
+                  )}
+                  Markup Value *
                 </label>
                 <input
                   type="number"
-                  name="creditLimit"
+                  name="markupValue"
                   required
                   min="0"
-                  value={formData.creditLimit}
+                  step={formData.markupType === "percentage" ? "0.1" : "1"}
+                  value={formData.markupValue}
                   onChange={handleInputChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Enter credit limit"
+                  placeholder={formData.markupType === "percentage" ? "Enter percentage" : "Enter fixed amount"}
                 />
+                {formData.markupType === "percentage" && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    This percentage will be added to the base price
+                  </p>
+                )}
+                {formData.markupType === "fixed" && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    This fixed amount will be added to the base price
+                  </p>
+                )}
               </div>
 
               {/* Account Manager */}
@@ -247,7 +370,6 @@ export default function AddB2BUserPage() {
                 </label>
                 {loadingManagers ? (
                   <div className="flex items-center justify-center p-3 border border-gray-300 rounded-lg bg-gray-50">
-                    <Loader className="w-4 h-4 animate-spin mr-2" />
                     Loading account managers...
                   </div>
                 ) : (
@@ -278,12 +400,12 @@ export default function AddB2BUserPage() {
                 {creatingUser ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Creating User...
+                    {isEditMode ? 'Updating...' : 'Creating...'}
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4" />
-                    Create B2B User
+                    {isEditMode ? <Save className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                    {isEditMode ? 'Update B2B User' : 'Create B2B User'}
                   </>
                 )}
               </button>
@@ -313,7 +435,8 @@ export default function AddB2BUserPage() {
             <li>• They can manage their own bookings and customers</li>
             <li>• Credit limit determines their purchasing power</li>
             <li>• Account manager provides dedicated support</li>
-            <li>• Temporary password will be emailed to the user</li>
+            <li>• Markup can be set as percentage or fixed amount</li>
+            {!isEditMode && <li>• Temporary password will be emailed to the user</li>}
           </ul>
         </motion.div>
       </div>

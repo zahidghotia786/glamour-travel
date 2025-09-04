@@ -112,6 +112,7 @@ export default function Footer() {
             })}
           </div>
         </div>
+
       </div>
 
       {/* Main Footer Content */}

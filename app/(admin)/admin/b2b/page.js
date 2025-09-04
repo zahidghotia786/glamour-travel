@@ -4,16 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   UserCheck,
-  UserX,
   Search,
-  Filter,
-  Plus,
-  MoreVertical,
   Eye,
-  Edit,
   Trash2,
   Download,
-  Upload,
   RefreshCw,
   Calendar,
   Mail,
@@ -24,20 +18,21 @@ import {
   User,
   CheckCircle,
   XCircle,
-  AlertTriangle,
-  Clock,
   DollarSign,
   TrendingUp,
   Settings,
   Ban,
   UserPlus,
+  Edit,
 } from "lucide-react";
-import { adminApi, handleApiError, toastConfig } from "@/lib/api";
+import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const UsersManagement = () => {
+  const router = useRouter();
   // State management
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +86,11 @@ const UsersManagement = () => {
 
         const response = await adminApi.getUsers(params);
 
-        setUsers(response.data || response.users || []);
+        const filteredUsers = (response.data || response.users || []).filter(
+          (user) => user.role !== "CUSTOMER"
+        );
+
+        setUsers(filteredUsers);
         setCurrentPage(
           response.pagination?.currentPage || response.pagination?.page || 1
         );
@@ -289,6 +288,14 @@ const UsersManagement = () => {
     } catch (error) {
       toast.error("Failed to export users");
     }
+  };
+
+  const handleEditB2BUser = (user) => {
+    router.push(
+      `/admin/b2b/add?edit=true&id=${user.id}&name=${user.name || ""}&email=${
+        user.email
+      }&phone=${user.phoneNumber || ""}`
+    );
   };
 
   // Utility functions
@@ -528,7 +535,6 @@ const UsersManagement = () => {
                       <option value="all">All Roles</option>
                       <option value="ADMIN">Admin</option>
                       <option value="B2B">B2B Partner</option>
-                      <option value="CUSTOMER">Customer</option>
                     </select>
 
                     {/* Status Filter */}
@@ -668,10 +674,11 @@ const UsersManagement = () => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {user.name ||
-                                  `${user.firstName} ${user.lastName}` ||
-                                  user.email}
+                                {user?.contactPerson
+                                  ? user.contactPerson
+                                  : user?.name ?? user?.email}
                               </div>
+
                               <div className="text-sm text-gray-500 flex items-center gap-1">
                                 <Mail className="w-3 h-3" />
                                 {user.email}
@@ -730,6 +737,18 @@ const UsersManagement = () => {
                               <Eye className="w-4 h-4" />
                             </motion.button>
 
+                            {user.role === "B2B" && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleEditB2BUser(user)}
+                                className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Edit B2B User"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </motion.button>
+                            )}
+
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
@@ -738,7 +757,7 @@ const UsersManagement = () => {
                               }
                               className={`p-2 rounded-lg transition-colors ${
                                 user.status === "active"
-                                  ? "text-red-500 hover:bg-red-50" 
+                                  ? "text-red-500 hover:bg-red-50"
                                   : "text-green-500 hover:bg-green-50"
                               }`}
                               title={
@@ -765,21 +784,8 @@ const UsersManagement = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </motion.button>
-                       
-                              {/* assign account manager button (commented out for now)  */}
-                              
-                            {/* <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowAssignManagerModal(true);
-                              }}
-                              className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Assign Account Manager"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                            </motion.button> */}
+
+                            {/* assign account manager button (commented out for now)  */}
                           </div>
                         </td>
                       </motion.tr>
@@ -1010,17 +1016,24 @@ const UsersManagement = () => {
                             selectedUser.user.isActive ? "Active" : "Inactive"
                           }
                         />
-                                                <InfoRow
+                        <InfoRow
                           icon={Shield}
                           label="User ID"
                           value={selectedUser.user.id}
                         />
+                        {selectedUser.user.companyName && (
+
+                          <InfoRow
+                          icon={Shield}
+                          label="Company"
+                          value={selectedUser.user.companyName || "N/A"}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-3 pt-6 border-t border-gray-200">
-
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}

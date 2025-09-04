@@ -3,37 +3,40 @@
 import { useEffect, useState } from "react";
 import {
   adminListProducts, adminDeleteProduct,
-  adminListMarkups, adminUpsertMarkup, adminDeleteMarkup,
-  adminGetB2BUsers // ADDED: Get B2B users with markup info
 } from "@/lib/api";
 import ProductForm from "./ProductForm";
 import ProductDetails from "./ProductDetails";
-import MarkupQuickAdd from "./MarkupQuickAdd";
-import { Eye, Pencil, Trash, Users, Tag, Percent } from "lucide-react";
+import { Eye, Pencil, Trash, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Loader from "@/components/common/Loader";
 
 export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
-  const [markups, setMarkups] = useState([]);
-  const [b2bUsers, setB2bUsers] = useState([]); // ADDED: B2B users state
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeTab, setActiveTab] = useState("products"); // ADDED: Tab state
-console.log(products, "products")
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(10);
+
   async function load() {
     setLoading(true);
     try {
       const [p, m, b2b] = await Promise.all([
         adminListProducts(), 
-        adminListMarkups(),
-        adminGetB2BUsers() // ADDED: Fetch B2B users
       ]);
       setProducts(p);
-      setMarkups(m);
-      setB2bUsers(b2b.users || b2b); // Handle different response formats
+      setFilteredProducts(p); // Initialize filtered products with all products
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -41,32 +44,62 @@ console.log(products, "products")
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load(); 
+  }, []);
 
-  // Helper function to get markups for a specific product
-  const getProductMarkups = (productId) => {
-    return markups.filter(markup => markup.productId === productId);
-  };
+  // Apply filters and search
+  useEffect(() => {
+    let filtered = products;
 
-  // Helper function to get markups for a specific B2B user
-  const getB2BUserMarkups = (b2bAccountId) => {
-    return markups.filter(markup => markup.b2bAccountId === b2bAccountId);
-  };
+    // Apply search term filter
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.shortDesc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
 
-  // Helper function to get global markups (no specific product or B2B user)
-  const getGlobalMarkups = () => {
-    return markups.filter(markup => !markup.productId && !markup.b2bAccountId);
-  };
+    // Apply category filter
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(product => 
+        product.category?.name === categoryFilter
+      );
+    }
 
-  // Helper function to check if a product has any markups
-  const hasProductMarkups = (productId) => {
-    return markups.some(markup => markup.productId === productId);
-  };
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(product =>
+        statusFilter === "active" ? product.isActive : !product.isActive
+      );
+    }
 
-  // Helper function to check if a B2B user has any markups
-  const hasB2BUserMarkups = (b2bAccountId) => {
-    return markups.some(markup => markup.b2bAccountId === b2bAccountId);
-  };
+    // Apply price filters
+    if (minPrice) {
+      filtered = filtered.filter(product => 
+        product.basePrice >= parseFloat(minPrice)
+      );
+    }
+
+    if (maxPrice) {
+      filtered = filtered.filter(product => 
+        product.basePrice <= parseFloat(maxPrice)
+      );
+    }
+
+    setFilteredProducts(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [products, searchTerm, categoryFilter, statusFilter, minPrice, maxPrice]);
+
+  // Get current products for pagination
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  // Get unique categories for filter dropdown
+  const categories = [...new Set(products.map(p => p.category?.name).filter(Boolean))];
 
   function openCreateForm() {
     setEditingProduct(null);
@@ -99,16 +132,6 @@ console.log(products, "products")
     await load();
   }
 
-  async function addMarkup({ b2bAccountId = null, productId = null, percentage }) {
-    await adminUpsertMarkup({ b2bAccountId, productId, percentage: Number(percentage) });
-    await load();
-  }
-
-  async function delMarkup(id) {
-    await adminDeleteMarkup(id);
-    await load();
-  }
-
   function onFormSuccess() {
     closeForm();
     load();
@@ -128,7 +151,7 @@ console.log(products, "products")
               Products & Pricing Dashboard
             </h1>
             <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
-              Manage products, B2B users, and pricing strategies
+              Manage products, Add , edit and remove products
             </p>
           </div>
           <button
@@ -144,345 +167,204 @@ console.log(products, "products")
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200">
           <button
-            onClick={() => setActiveTab("products")}
-            className={`px-4 py-2 font-medium text-sm md:text-base ${
-              activeTab === "products"
-                ? "border-b-2 border-violet-600 text-violet-700"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            className={`px-4 py-2 font-medium text-sm md:text-base border-b-2 border-violet-600 text-violet-700`}
           >
-            📦 Products ({products.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("markups")}
-            className={`px-4 py-2 font-medium text-sm md:text-base ${
-              activeTab === "markups"
-                ? "border-b-2 border-violet-600 text-violet-700"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            💰 Markup Rules ({markups.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("b2b")}
-            className={`px-4 py-2 font-medium text-sm md:text-base ${
-              activeTab === "b2b"
-                ? "border-b-2 border-violet-600 text-violet-700"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            👥 B2B Users ({b2bUsers.length})
+            📦 Products ({filteredProducts.length})
           </button>
         </div>
 
+        {/* Search and Filter Section */}
+        <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 p-4 md:p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Search & Filter Products</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search by Name */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              />
+            </div>
+
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full p-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full p-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+
+            {/* Min Price */}
+            <input
+              type="number"
+              placeholder="Min Price"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-full p-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              min="0"
+            />
+
+            {/* Max Price */}
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-full p-2 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              min="0"
+            />
+          </div>
+        </div>
+
         {/* Products Tab */}
-        {activeTab === "products" && (
-          <div className="overflow-hidden grid grid-cols-1">
-            <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="p-4 md:p-6">
-                <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">
+        <div className="overflow-hidden grid grid-cols-1">
+          <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4">
+                <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
                   Products Collection
                 </h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px]">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        {["Name", "Category", "Base Price", "Markups", "Status", "Images", "Actions"].map((header) => (
-                          <th
-                            key={header}
-                            className="py-3 px-2 md:py-4 md:px-3 text-left text-xs md:text-sm font-semibold text-gray-700"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {products.map((p) => {
-                        const productMarkups = getProductMarkups(p.id);
-                        const hasMarkups = productMarkups.length > 0;
-                        
-                        return (
-                          <tr
-                            key={p.id}
-                            className="hover:bg-gradient-to-r hover:from-violet-50 hover:to-indigo-50 transition-all duration-300"
-                          >
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="font-semibold text-gray-900 text-sm md:text-base">{p.name}</div>
-                              <div className="text-xs md:text-sm text-gray-500 truncate max-w-[120px] md:max-w-xs">
-                                {p.shortDesc}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span 
-                                className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium ${
-                                  p.type === 'THEME_PARK' ? 'bg-purple-100 text-purple-700' :
-                                  p.type === 'TOUR' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-green-100 text-green-700'
-                                }`}
-                              >
-                                {p.category.name}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="font-mono font-semibold text-gray-900 text-sm md:text-base">
-                                {p.baseCurrency} {Number(p.basePrice).toFixed(2)}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              {hasMarkups ? (
-                                <div className="flex flex-col gap-1">
-                                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                    <Tag className="w-3 h-3 inline mr-1" />
-                                    {productMarkups.length} markup(s)
-                                  </span>
-                                  {productMarkups.slice(0, 2).map((m, index) => (
-                                    <span key={index} className="text-xs text-gray-600">
-                                      +{m.percentage}%{m.b2bAccount ? ` for ${m.b2bAccount.name}` : ''}
-                                    </span>
-                                  ))}
-                                  {productMarkups.length > 2 && (
-                                    <span className="text-xs text-gray-400">
-                                      +{productMarkups.length - 2} more...
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400">No markups</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span 
-                                className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium ${
-                                  p.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-700"
-                                }`}
-                              >
-                                {p.isActive ? "✅ Active" : "⏸ Inactive"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs md:text-sm text-gray-600">{p.images?.length || 0}</span>
-                                <span>📸</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="flex gap-1 md:gap-2">
-                                <button
-                                  onClick={() => openDetails(p)}
-                                  className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-gray-500 text-white text-xs md:text-sm font-medium hover:bg-gray-600 transition-colors flex items-center gap-1"
-                                  title="View Details"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => openEditForm(p)}
-                                  className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-blue-500 text-white text-xs md:text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                                  title="Edit Product"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => removeProduct(p.id)}
-                                  className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-red-500 text-white text-xs md:text-sm font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
-                                  title="Delete Product"
-                                >
-                                  <Trash className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="text-sm text-gray-600">
+                  Showing {Math.min(filteredProducts.length, productsPerPage)} of {filteredProducts.length} products
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+              
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[800px]">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      {["Name", "Category", "Base Price", "Status", "Images", "Actions"].map((header) => (
+                        <th
+                          key={header}
+                          className="py-3 px-2 md:py-4 md:px-3 text-left text-xs md:text-sm font-semibold text-gray-700"
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {currentProducts.map((p) => (
+                      <tr
+                        key={p.id}
+                        className="hover:bg-gradient-to-r hover:from-violet-50 hover:to-indigo-50 transition-all duration-300"
+                      >
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <div className="font-semibold text-gray-900 text-sm md:text-base">{p.name}</div>
+                          <div className="text-xs md:text-sm text-gray-500 truncate max-w-[120px] md:max-w-xs">
+                            {p.shortDesc}
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <span 
+                            className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium ${
+                              p.type === 'THEME_PARK' ? 'bg-purple-100 text-purple-700' :
+                              p.type === 'TOUR' ? 'bg-blue-100 text-blue-700' :
+                              'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {p.category?.name}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <div className="font-mono font-semibold text-gray-900 text-sm md:text-base">
+                            {p.baseCurrency} {Number(p.basePrice).toFixed(2)}
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <span 
+                            className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium ${
+                              p.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {p.isActive ? "✅ Active" : "⏸ Inactive"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs md:text-sm text-gray-600">{p.images?.length || 0}</span>
+                            <span>📸</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 md:py-4 md:px-3">
+                          <div className="flex gap-1 md:gap-2">
+                            <button
+                              onClick={() => openDetails(p)}
+                              className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-gray-500 text-white text-xs md:text-sm font-medium hover:bg-gray-600 transition-colors flex items-center gap-1"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => openEditForm(p)}
+                              className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-blue-500 text-white text-xs md:text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
+                              title="Edit Product"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeProduct(p.id)}
+                              className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-red-500 text-white text-xs md:text-sm font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
+                              title="Delete Product"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-        {/* Markup Rules Tab */}
-        {activeTab === "markups" && (
-          <div className="overflow-hidden grid grid-cols-1">
-            <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4">
-                  <div>
-                    <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Markup Rules</h2>
-                    <p className="text-gray-600 text-sm md:text-base">Configure pricing strategies</p>
+              {/* Pagination Controls */}
+              {filteredProducts.length > productsPerPage && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t border-gray-200 gap-4">
+                  <div className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
                   </div>
-                  <MarkupQuickAdd onAdd={addMarkup} products={products} b2bUsers={b2bUsers} />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 flex items-center gap-1"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[700px]">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        {["Type", "B2B Account", "Product", "Markup %", "Actions"].map((header) => (
-                          <th
-                            key={header}
-                            className="py-3 px-2 md:py-4 md:px-3 text-left text-xs md:text-sm font-semibold text-gray-700"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {markups.map((m) => {
-                        let ruleType = "Global";
-                        if (m.b2bAccountId && m.productId) ruleType = "B2B + Product";
-                        else if (m.b2bAccountId) ruleType = "B2B Specific";
-                        else if (m.productId) ruleType = "Product Specific";
-
-                        return (
-                          <tr
-                            key={m.id}
-                            className="hover:bg-gradient-to-r hover:from-orange-50 hover:to-yellow-50 transition-all duration-300"
-                          >
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                ruleType === "Global" ? "bg-gray-100 text-gray-700" :
-                                ruleType === "B2B Specific" ? "bg-blue-100 text-blue-700" :
-                                ruleType === "Product Specific" ? "bg-green-100 text-green-700" :
-                                "bg-purple-100 text-purple-700"
-                              }`}>
-                                {ruleType}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span className="font-medium text-gray-900 text-sm md:text-base">
-                                {m.b2bAccount ? `${m.b2bAccount.name} (${m.b2bAccount.code})` : "🌐 All B2B Users"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span className="text-gray-700 text-sm md:text-base">
-                                {m.product?.name || "🎯 All Products"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span 
-                                className="px-2 py-1 md:px-3 md:py-1 rounded-full bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-700 font-mono font-semibold text-xs md:text-sm"
-                              >
-                                {m.percentage}%
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <button
-                                onClick={() => delMarkup(m.id)}
-                                className="px-2 py-1 md:px-3 md:py-1 rounded-lg bg-red-500 text-white text-xs md:text-sm font-medium hover:bg-red-600 transition-colors"
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        )}
-
-        {/* B2B Users Tab */}
-        {activeTab === "b2b" && (
-          <div className="overflow-hidden grid grid-cols-1">
-            <div className="bg-white/70 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="p-4 md:p-6">
-                <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">
-                  B2B Users ({b2bUsers.length})
-                </h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px]">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        {["Name", "Company", "Email", "Discount Rate", "Markups", "Status", "Account Manager"].map((header) => (
-                          <th
-                            key={header}
-                            className="py-3 px-2 md:py-4 md:px-3 text-left text-xs md:text-sm font-semibold text-gray-700"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {b2bUsers.map((user) => {
-                        const userMarkups = getB2BUserMarkups(user.id);
-                        const hasMarkups = userMarkups.length > 0;
-                        
-                        return (
-                          <tr
-                            key={user.id}
-                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-300"
-                          >
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="font-semibold text-gray-900 text-sm md:text-base">
-                                {user.firstName} {user.lastName}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="text-sm text-gray-700">{user.companyName}</div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <div className="text-sm text-gray-600">{user.email}</div>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                {user.b2bDiscountRate || 15}% off
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              {hasMarkups ? (
-                                <div className="flex flex-col gap-1">
-                                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                    <Percent className="w-3 h-3 inline mr-1" />
-                                    {userMarkups.length} custom markup(s)
-                                  </span>
-                                  {userMarkups.slice(0, 2).map((m, index) => (
-                                    <span key={index} className="text-xs text-gray-600">
-                                      {m.percentage}%{m.product ? ` on ${m.product.name}` : ''}
-                                    </span>
-                                  ))}
-                                  {userMarkups.length > 2 && (
-                                    <span className="text-xs text-gray-400">
-                                      +{userMarkups.length - 2} more...
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400">No custom markups</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span 
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  user.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-700"
-                                }`}
-                              >
-                                {user.isActive ? "✅ Active" : "⏸ Inactive"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 md:py-4 md:px-3">
-                              <span className="text-xs text-gray-500">
-                                {user.accountManager ? 
-                                  `${user.accountManager.firstName} ${user.accountManager.lastName}` : 
-                                  "Not assigned"
-                                }
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Modals */}

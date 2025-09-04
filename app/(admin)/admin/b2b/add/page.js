@@ -1,5 +1,5 @@
 "use client";
-import { Suspense , useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react"; // Added Suspense import
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -21,7 +21,8 @@ import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 
- function AddB2BUserContent() {
+// Renamed this function to AddB2BUserContent
+function AddB2BUserContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
@@ -136,9 +137,7 @@ import Loader from "@/components/common/Loader";
   };
 
   if (loadingUserData) {
-    return (
-   <Loader />
-    );
+    return <Loader />;
   }
 
   return (
@@ -295,7 +294,6 @@ import Loader from "@/components/common/Loader";
                 />
               </div>
 
-
               {/* Markup Type */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -444,7 +442,7 @@ import Loader from "@/components/common/Loader";
   );
 }
 
-
+// This is the default export that wraps the content in Suspense
 export default function AddB2BUserPage() {
   return (
     <Suspense fallback={<Loader />}>

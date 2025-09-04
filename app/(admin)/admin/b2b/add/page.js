@@ -21,7 +21,7 @@ import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 
-export default function AddB2BUserPage() {
+ function AddB2BUserPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
@@ -441,5 +441,14 @@ export default function AddB2BUserPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+
+export default function AddB2BUserPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <AddB2BUserContent />
+    </Suspense>
   );
 }

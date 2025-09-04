@@ -1,6 +1,6 @@
 "use client";
-import { Suspense, useState, useEffect } from "react"; // Added Suspense import
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   UserPlus,
@@ -21,10 +21,9 @@ import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 
-// Renamed this function to AddB2BUserContent
-function AddB2BUserContent() {
+// This component now accepts searchParams as a prop
+function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
   const [loadingManagers, setLoadingManagers] = useState(true);
   const [loadingUserData, setLoadingUserData] = useState(false);
@@ -442,11 +441,18 @@ function AddB2BUserContent() {
   );
 }
 
+// This component handles the searchParams extraction
+function AddB2BUserWithParams() {
+  const searchParams = useSearchParams();
+  
+  return <AddB2BUserContent searchParams={searchParams} />;
+}
+
 // This is the default export that wraps the content in Suspense
 export default function AddB2BUserPage() {
   return (
     <Suspense fallback={<Loader />}>
-      <AddB2BUserContent />
+      <AddB2BUserWithParams />
     </Suspense>
   );
 }

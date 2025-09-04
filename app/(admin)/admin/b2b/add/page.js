@@ -1,10 +1,13 @@
-"use client";
-import AddB2BUserPage from "@/components/pages/AddB2BUserPage";
+// app/admin/b2b/add/page.js
+export const dynamic = "force-dynamic";   // <-- add this
+
 import { Suspense } from "react";
+import AddB2BUserPage from "@/components/AddB2BUserPage";
+import Loader from "@/components/common/Loader";
 
 export default function AddB2BUserPageWrapper() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading user form...</div>}>
+    <Suspense fallback={<Loader />}>
       <AddB2BUserPage />
     </Suspense>
   );

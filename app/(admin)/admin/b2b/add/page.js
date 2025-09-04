@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { Suspense , useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -21,7 +21,7 @@ import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 
- function AddB2BUserPage() {
+ function AddB2BUserContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);

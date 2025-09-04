@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -21,8 +21,7 @@ import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 import Loader from "@/components/common/Loader";
 
-// This component now accepts searchParams as a prop
-function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) {
+export default function AddB2BUserPage() {
   const router = useRouter();
   const [creatingUser, setCreatingUser] = useState(false);
   const [loadingManagers, setLoadingManagers] = useState(true);
@@ -44,17 +43,21 @@ function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) 
 
   // Check if we're in edit mode and fetch user data if needed
   useEffect(() => {
-    const edit = searchParams.get('edit');
-    const id = searchParams.get('id');
-    
-    if (edit === 'true' && id) {
-      setIsEditMode(true);
-      setUserId(id);
-      fetchUserData(id);
+    // Use URLSearchParams with window.location to avoid useSearchParams hook
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const edit = searchParams.get('edit');
+      const id = searchParams.get('id');
+      
+      if (edit === 'true' && id) {
+        setIsEditMode(true);
+        setUserId(id);
+        fetchUserData(id);
+      }
     }
 
     fetchAccountManagers();
-  }, [searchParams]);
+  }, []);
 
   const fetchAccountManagers = async () => {
     try {
@@ -101,16 +104,13 @@ function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) 
 
     try {
       if (isEditMode) {
-        // Update existing user
         const response = await adminApi.updateB2BUser(userId, formData);
         toast.success("B2B user updated successfully!");
       } else {
-        // Create new user
         const response = await adminApi.createB2BUser(formData);
         toast.success("B2B user created successfully!");
       }
       
-      // Redirect back to users management
       router.push("/admin/b2b");
     } catch (error) {
       handleApiError(error, toast);
@@ -131,7 +131,7 @@ function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) 
     setFormData(prev => ({
       ...prev,
       markupType: type,
-      markupValue: 0 // Reset value when changing type
+      markupValue: 0
     }));
   };
 
@@ -164,7 +164,6 @@ function AddB2BUserContent({ searchParams }: { searchParams: URLSearchParams }) 
             </p>
           </div>
         </div>
-
         {/* Form Card */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}

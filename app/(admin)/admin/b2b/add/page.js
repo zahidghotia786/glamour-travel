@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   UserPlus,
@@ -23,6 +23,7 @@ import Loader from "@/components/common/Loader";
 
 export default function AddB2BUserPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
   const [loadingManagers, setLoadingManagers] = useState(true);
   const [loadingUserData, setLoadingUserData] = useState(false);
@@ -43,21 +44,17 @@ export default function AddB2BUserPage() {
 
   // Check if we're in edit mode and fetch user data if needed
   useEffect(() => {
-    // Use URLSearchParams with window.location to avoid useSearchParams hook
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const edit = searchParams.get('edit');
-      const id = searchParams.get('id');
-      
-      if (edit === 'true' && id) {
-        setIsEditMode(true);
-        setUserId(id);
-        fetchUserData(id);
-      }
+    const edit = searchParams.get('edit');
+    const id = searchParams.get('id');
+    
+    if (edit === 'true' && id) {
+      setIsEditMode(true);
+      setUserId(id);
+      fetchUserData(id);
     }
 
     fetchAccountManagers();
-  }, []);
+  }, [searchParams]);
 
   const fetchAccountManagers = async () => {
     try {
@@ -104,13 +101,16 @@ export default function AddB2BUserPage() {
 
     try {
       if (isEditMode) {
+        // Update existing user
         const response = await adminApi.updateB2BUser(userId, formData);
         toast.success("B2B user updated successfully!");
       } else {
+        // Create new user
         const response = await adminApi.createB2BUser(formData);
         toast.success("B2B user created successfully!");
       }
       
+      // Redirect back to users management
       router.push("/admin/b2b");
     } catch (error) {
       handleApiError(error, toast);
@@ -131,12 +131,14 @@ export default function AddB2BUserPage() {
     setFormData(prev => ({
       ...prev,
       markupType: type,
-      markupValue: 0
+      markupValue: 0 // Reset value when changing type
     }));
   };
 
   if (loadingUserData) {
-    return <Loader />;
+    return (
+   <Loader />
+    );
   }
 
   return (
@@ -164,6 +166,7 @@ export default function AddB2BUserPage() {
             </p>
           </div>
         </div>
+
         {/* Form Card */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -291,6 +294,7 @@ export default function AddB2BUserPage() {
                   placeholder="Enter business license number"
                 />
               </div>
+
 
               {/* Markup Type */}
               <div className="md:col-span-2">
@@ -437,21 +441,5 @@ export default function AddB2BUserPage() {
         </motion.div>
       </div>
     </div>
-  );
-}
-
-// This component handles the searchParams extraction
-function AddB2BUserWithParams() {
-  const searchParams = useSearchParams();
-  
-  return <AddB2BUserContent searchParams={searchParams} />;
-}
-
-// This is the default export that wraps the content in Suspense
-export default function AddB2BUserPage() {
-  return (
-    <Suspense fallback={<Loader />}>
-      <AddB2BUserWithParams />
-    </Suspense>
   );
 }

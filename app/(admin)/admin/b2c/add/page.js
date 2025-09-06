@@ -19,8 +19,9 @@ import {
 } from "lucide-react";
 import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
+import Loader from "@/components/common/Loader";
 
-export default function AddB2BUserContent() {
+export default function AddB2BUserPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [creatingUser, setCreatingUser] = useState(false);
@@ -73,7 +74,7 @@ export default function AddB2BUserContent() {
       setLoadingUserData(true);
       const response = await adminApi.getUserDetails(id);
       const user = response.user || response;
-
+      
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -126,7 +127,6 @@ export default function AddB2BUserContent() {
     }));
   };
 
-
   const handleMarkupTypeChange = (type) => {
     setFormData(prev => ({
       ...prev,
@@ -136,7 +136,9 @@ export default function AddB2BUserContent() {
   };
 
   if (loadingUserData) {
-    return <div>Loading...</div>;
+    return (
+   <Loader />
+    );
   }
 
   return (
@@ -441,3 +443,6 @@ export default function AddB2BUserContent() {
     </div>
   );
 }
+
+
+

@@ -18,8 +18,6 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     accountType: "customer", // customer or business
-    companyName: "",
-    businessLicense: "",
     preferredLanguage: "en"
   });
   const [loading, setLoading] = useState(false);
@@ -45,10 +43,7 @@ export default function RegisterPage() {
       setError("Password must be at least 6 characters long");
       return false;
     }
-    if (formData.accountType === "business" && !formData.companyName.trim()) {
-      setError("Company name is required for business accounts");
-      return false;
-    }
+
     return true;
   };
 
@@ -73,10 +68,6 @@ const handleRegister = async (e) => {
       password: formData.password,
       role: formData.accountType,
       preferredLanguage: formData.preferredLanguage,
-      ...(formData.accountType === "business" && {
-        companyName: formData.companyName,
-        businessLicense: formData.businessLicense
-      })
     };
 
     const res = await fetchFromAPI("auth/register", {
@@ -160,17 +151,12 @@ const handleRegister = async (e) => {
         >
           {/* Account Type Selection */}
           <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Choose Your Account Type</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid  gap-4">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, accountType: "customer" }))}
                 className={`p-4 rounded-2xl border-2 transition-all duration-300 ${
-                  formData.accountType === "customer"
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                     "border-blue-500 bg-blue-50 text-blue-700"
                 }`}
               >
                 <div className="text-center">
@@ -179,24 +165,7 @@ const handleRegister = async (e) => {
                   <div className="text-sm opacity-75">Book tickets for yourself & family</div>
                 </div>
               </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, accountType: "business" }))}
-                className={`p-4 rounded-2xl border-2 transition-all duration-300 ${
-                  formData.accountType === "business"
-                    ? "border-purple-500 bg-purple-50 text-purple-700"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-2xl mb-2">🏢</div>
-                  <div className="font-semibold">Business Partner</div>
-                  <div className="text-sm opacity-75">Special rates & bulk bookings</div>
-                </div>
-              </motion.button>
+
             </div>
           </div>
 
@@ -291,42 +260,6 @@ const handleRegister = async (e) => {
               </div>
             </div>
 
-            {/* Business Information (conditional) */}
-            {formData.accountType === "business" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">2</span>
-                  Business Information
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                    <input
-                      type="text"
-                      name="companyName"
-                      value={formData.companyName}
-                      onChange={handleInputChange}
-                      required={formData.accountType === "business"}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm"
-                      placeholder="Enter your company name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Business License (Optional)</label>
-                    <input
-                      type="text"
-                      name="businessLicense"
-                      value={formData.businessLicense}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white/50 backdrop-blur-sm"
-                      placeholder="Enter license number"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Account Security */}
             <div>

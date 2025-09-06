@@ -291,13 +291,9 @@ const UsersManagement = () => {
     }
   };
 
-  const handleEditB2BUser = (user) => {
-    router.push(
-      `/admin/b2b/add?edit=true&id=${user.id}&name=${user.name || ""}&email=${
-        user.email
-      }&phone=${user.phoneNumber || ""}`
-    );
-  };
+const handleEditB2BUser = (user) => {
+  router.push(`/admin/b2b/edit/${user.id}`);
+};
 
   // Utility functions
   const getRoleIcon = (role) => {

@@ -14,7 +14,8 @@ import {
   FileText,
   Shield,
   Percent,
-  DollarSign
+  DollarSign,
+  UserCheck
 } from "lucide-react";
 import { adminApi, handleApiError } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -29,6 +30,7 @@ function EditB2BUserContent() {
   const [loadingManagers, setLoadingManagers] = useState(true);
   const [loadingUserData, setLoadingUserData] = useState(true);
   const [accountManagers, setAccountManagers] = useState([]);
+  const [currentAccountManager, setCurrentAccountManager] = useState(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -67,6 +69,11 @@ function EditB2BUserContent() {
       const response = await adminApi.getUserDetails(id);
       const user = response.user || response;
       
+      // Set current account manager if exists
+      if (user.accountManager) {
+        setCurrentAccountManager(user.accountManager);
+      }
+      
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -74,7 +81,7 @@ function EditB2BUserContent() {
         phoneNumber: user.phoneNumber || "",
         companyName: user.companyName || "",
         businessLicense: user.businessLicense || "",
-        accountManagerId: user.accountManagerId || "",
+        accountManagerId: user.accountManager?.id || "",
         markupType: user.markupType || "percentage",
         markupValue: user.markupValue || 0
       });
@@ -91,7 +98,19 @@ function EditB2BUserContent() {
     setUpdatingUser(true);
 
     try {
-      const response = await adminApi.updateB2BUser(userId, formData);
+      // Prepare data for API - only send fields that the backend expects
+      const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        companyName: formData.companyName,
+        businessLicense: formData.businessLicense,
+        accountManagerId: formData.accountManagerId === "remove" ? "" : formData.accountManagerId,
+        markupType: formData.markupType,
+        markupValue: parseFloat(formData.markupValue)
+      };
+
+      const response = await adminApi.updateB2BUser(userId, updateData);
       toast.success("B2B user updated successfully!");
       router.push("/admin/b2b");
     } catch (error) {
@@ -267,6 +286,54 @@ function EditB2BUserContent() {
                 />
               </div>
 
+              {/* Current Account Manager Display */}
+              {currentAccountManager && (
+                <div className="md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Current Account Manager
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{currentAccountManager.name}</p>
+                      <p className="text-sm text-blue-600">{currentAccountManager.email}</p>
+                    </div>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                      Assigned
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Account Manager Selection */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  {currentAccountManager ? "Change Account Manager" : "Assign Account Manager"}
+                </label>
+                {loadingManagers ? (
+                  <div className="flex items-center justify-center p-3 border border-gray-300 rounded-lg bg-gray-50">
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    Loading account managers...
+                  </div>
+                ) : (
+                  <select
+                    name="accountManagerId"
+                    value={formData.accountManagerId}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    <option value="">{currentAccountManager ? "Keep current manager" : "Select Account Manager (Optional)"}</option>
+                    {accountManagers.map(manager => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.firstName} {manager.lastName} - {manager.email}
+                      </option>
+                    ))}
+                    <option value="remove">Remove Account Manager</option>
+                  </select>
+                )}
+              </div>
+
               {/* Markup Type */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -332,33 +399,6 @@ function EditB2BUserContent() {
                   </p>
                 )}
               </div>
-
-              {/* Account Manager */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  Assign Account Manager
-                </label>
-                {loadingManagers ? (
-                  <div className="flex items-center justify-center p-3 border border-gray-300 rounded-lg bg-gray-50">
-                    Loading account managers...
-                  </div>
-                ) : (
-                  <select
-                    name="accountManagerId"
-                    value={formData.accountManagerId}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    <option value="">Select Account Manager (Optional)</option>
-                    {accountManagers.map(manager => (
-                      <option key={manager.id} value={manager.id}>
-                        {manager.firstName} {manager.lastName} - {manager.email}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
             </div>
 
             {/* Action Buttons */}
@@ -404,7 +444,6 @@ function EditB2BUserContent() {
           <ul className="text-blue-700 space-y-1 text-sm">
             <li>• B2B users get special pricing and markup options</li>
             <li>• They can manage their own bookings and customers</li>
-            <li>• Credit limit determines their purchasing power</li>
             <li>• Account manager provides dedicated support</li>
             <li>• Markup can be set as percentage or fixed amount</li>
           </ul>

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, Suspense  } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Menu,
   X,
@@ -24,7 +24,6 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { userApi } from "@/lib/api";
-import Loader from "@/components/common/Loader";
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -279,12 +278,9 @@ export default function AdminLayout({ children }) {
 
         {/* Content */}
         <main className="flex-1 p-6 overflow-y-auto">
-          <Suspense fallback={<Loader />}>
-            {children}
-          </Suspense>
+          {children}
           <Toaster position="top-right" reverseOrder={false} />
         </main>
-
       </div>
     </div>
   );

@@ -1,50 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
-import { Users, MapPin, Globe, Star } from "lucide-react";
 
 export default function StatsSection() {
-  const stats = [
-    { number: "500K+", label: "Happy Customers", icon: Users },
-    { number: "150+", label: "Attractions", icon: MapPin },
-    { number: "50+", label: "Destinations", icon: Globe },
-    { number: "4.9", label: "Average Rating", icon: Star },
-  ];
 
   return (
     <>
-      <section className="py-20 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => {
-              const IconComponent = stat.icon;
-              return (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-center group"
-                >
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-600 font-medium">{stat.label}</div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      
+
       {/* Dubai Tourism License Section */}
       <motion.section
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="mt-18 border-t border-b border-gray-200"
+        className=" border-t border-b border-gray-200"
       >
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">

@@ -12,7 +12,7 @@ export default function HomePage() {
       <HeroSection />
       <SearchWithCalendar />
       <FeaturedDestinations />
-      <StatsSection />
+       <StatsSection />    {/* // Dubai Tourism License Section */}
       <FeaturesSection />
       <TestimonialsSection />
       <CTASection />

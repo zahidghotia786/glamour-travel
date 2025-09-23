@@ -15,8 +15,7 @@ import {
 import Link from "next/link";
 import B2CPageLayout from "../B2CPageLayout";
 
-export default function AvailabilityPage() {
-  const searchParams = useSearchParams();
+export default function AvailabilityPage({ searchParams }) {
   const [loading, setLoading] = useState(true);
   const [availabilityData, setAvailabilityData] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);

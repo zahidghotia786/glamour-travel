@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchFromAPI } from "../../../lib/api";
+import B2CPageLayout from "../B2CPageLayout";
 
 export default function SearchPage() {
   const [tickets, setTickets] = useState([]);
@@ -12,6 +13,7 @@ export default function SearchPage() {
   }, []);
 
   return (
+    <B2CPageLayout>
     <div className="p-6">
       <h1 className="text-2xl mb-4">Available Tickets</h1>
       <ul>
@@ -22,5 +24,6 @@ export default function SearchPage() {
         ))}
       </ul>
     </div>
+    </B2CPageLayout>
   );
 }

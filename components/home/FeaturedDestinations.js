@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   MapPin,
   Clock,
@@ -16,21 +16,21 @@ import {
   List,
   Star,
   Users,
-  CheckCircle
-} from 'lucide-react';
-import { fetchFromAPI } from '@/lib/api';
-import Loader from '../common/Loader';
+  CheckCircle,
+} from "lucide-react";
+import { fetchFromAPI } from "@/lib/api";
+import Loader from "../common/Loader";
 
 export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
-  const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState("grid");
 
   useEffect(() => {
     fetchAllProducts();
@@ -43,19 +43,18 @@ export default function ProductsPage() {
   const fetchAllProducts = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
-      const response = await fetchFromAPI('Tour/dubai/tours/public');
-      
+      const response = await fetchFromAPI("Tour/dubai/tours/public");
+
       if (response.statuscode === 0 && response.result) {
         setProducts(response.result);
       } else {
-        throw new Error(response.error || 'Failed to fetch products');
+        throw new Error(response.error || "Failed to fetch products");
       }
-
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching products:', err);
+      console.error("Error fetching products:", err);
     } finally {
       setLoading(false);
     }
@@ -66,31 +65,35 @@ export default function ProductsPage() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.tourName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.tourShortDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.cityTourType?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (product) =>
+          product.tourName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.tourShortDescription
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          product.cityTourType?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filter by category
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(product =>
-        product.cityTourType?.toLowerCase() === categoryFilter.toLowerCase()
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(
+        (product) =>
+          product.cityTourType?.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
 
     // Sort products
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'price':
+        case "price":
           return (a.startingPrice || 0) - (b.startingPrice || 0);
-        case 'rating':
+        case "rating":
           return (b.rating || 0) - (a.rating || 0);
-        case 'reviews':
+        case "reviews":
           return (b.reviewCount || 0) - (a.reviewCount || 0);
-        case 'name':
-          return (a.tourName || '').localeCompare(b.tourName || '');
+        case "name":
+          return (a.tourName || "").localeCompare(b.tourName || "");
         default:
           return 0;
       }
@@ -100,32 +103,31 @@ export default function ProductsPage() {
   };
 
   const formatPrice = (price) => {
-    if (!price) return 'Price available';
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: 'AED'
+    if (!price) return "Price available";
+    return new Intl.NumberFormat("en-AE", {
+      style: "currency",
+      currency: "AED",
     }).format(price);
   };
 
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80';
+    if (!imagePath)
+      return "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80";
     return `https://cdn.raynatours.com/${imagePath}`;
   };
 
   const getUniqueCategories = () => {
     const categories = products
-      .map(product => product.cityTourType)
+      .map((product) => product.cityTourType)
       .filter(Boolean)
       .filter((value, index, self) => self.indexOf(value) === index);
-    
+
     return categories;
   };
 
-const viewProductDetails = (tourId, contractId) => {
-  router.push(`/booking/${tourId}?contractId=${contractId}`);
-};
-
-
+  const viewProductDetails = (tourId, contractId) => {
+    router.push(`/booking/${tourId}?contractId=${contractId}`);
+  };
 
   const getRatingStars = (rating) => {
     return Math.floor(rating || 5);
@@ -134,58 +136,58 @@ const viewProductDetails = (tourId, contractId) => {
   // Helper function to get icon component from category name
   const getIconComponent = (categoryName) => {
     const iconMap = {
-      'City Tours': Plane,
-      'Desert Safari': MapPin,
-      'Water Sports': Globe,
-      'Theme Parks': Gift,
-      'Adventure Tours': MapPin,
-      'Cultural Tours': Camera,
-      'Dhow Cruise': Globe,
-      'Shopping Tours': Gift,
-      'Food Tours': Heart,
-      'Entertainment': Star,
-      'Sightseeing': Camera,
-      'Day Tours': Clock,
-      'Half Day Tours': Clock
+      "City Tours": Plane,
+      "Desert Safari": MapPin,
+      "Water Sports": Globe,
+      "Theme Parks": Gift,
+      "Adventure Tours": MapPin,
+      "Cultural Tours": Camera,
+      "Dhow Cruise": Globe,
+      "Shopping Tours": Gift,
+      "Food Tours": Heart,
+      Entertainment: Star,
+      Sightseeing: Camera,
+      "Day Tours": Clock,
+      "Half Day Tours": Clock,
     };
-    
+
     return iconMap[categoryName] || Globe;
   };
 
   // Get background color based on category
   const getCategoryBg = (categoryName) => {
     const bgMap = {
-      'City Tours': 'bg-gradient-to-r from-blue-50 to-blue-100',
-      'Desert Safari': 'bg-gradient-to-r from-amber-50 to-orange-100',
-      'Water Sports': 'bg-gradient-to-r from-sky-50 to-sky-100',
-      'Theme Parks': 'bg-gradient-to-r from-pink-50 to-pink-100',
-      'Adventure Tours': 'bg-gradient-to-r from-green-50 to-green-100',
-      'Cultural Tours': 'bg-gradient-to-r from-purple-50 to-purple-100',
-      'Dhow Cruise': 'bg-gradient-to-r from-teal-50 to-cyan-100',
-      'Shopping Tours': 'bg-gradient-to-r from-rose-50 to-pink-100',
-      'Food Tours': 'bg-gradient-to-r from-emerald-50 to-teal-100',
-      'Entertainment': 'bg-gradient-to-r from-indigo-50 to-purple-100',
-      'Sightseeing': 'bg-gradient-to-r from-violet-50 to-purple-100',
-      'Day Tours': 'bg-gradient-to-r from-cyan-50 to-blue-100',
-      'Half Day Tours': 'bg-gradient-to-r from-lime-50 to-green-100'
+      "City Tours": "bg-gradient-to-r from-blue-50 to-blue-100",
+      "Desert Safari": "bg-gradient-to-r from-amber-50 to-orange-100",
+      "Water Sports": "bg-gradient-to-r from-sky-50 to-sky-100",
+      "Theme Parks": "bg-gradient-to-r from-pink-50 to-pink-100",
+      "Adventure Tours": "bg-gradient-to-r from-green-50 to-green-100",
+      "Cultural Tours": "bg-gradient-to-r from-purple-50 to-purple-100",
+      "Dhow Cruise": "bg-gradient-to-r from-teal-50 to-cyan-100",
+      "Shopping Tours": "bg-gradient-to-r from-rose-50 to-pink-100",
+      "Food Tours": "bg-gradient-to-r from-emerald-50 to-teal-100",
+      Entertainment: "bg-gradient-to-r from-indigo-50 to-purple-100",
+      Sightseeing: "bg-gradient-to-r from-violet-50 to-purple-100",
+      "Day Tours": "bg-gradient-to-r from-cyan-50 to-blue-100",
+      "Half Day Tours": "bg-gradient-to-r from-lime-50 to-green-100",
     };
-    return bgMap[categoryName] || 'bg-gradient-to-r from-gray-50 to-gray-100';
+    return bgMap[categoryName] || "bg-gradient-to-r from-gray-50 to-gray-100";
   };
 
   // Map categories to filter options
   const categoryFilters = [
-    { 
-      id: "all", 
-      label: "All Tours", 
-      icon: Globe, 
-      count: products.length 
+    {
+      id: "all",
+      label: "All Tours",
+      icon: Globe,
+      count: products.length,
     },
-    ...getUniqueCategories().map(category => ({
+    ...getUniqueCategories().map((category) => ({
       id: category,
       label: category,
       icon: getIconComponent(category),
-      count: products.filter(p => p.cityTourType === category).length
-    }))
+      count: products.filter((p) => p.cityTourType === category).length,
+    })),
   ];
 
   if (loading) {
@@ -201,7 +203,7 @@ const viewProductDetails = (tourId, contractId) => {
             Oops! Something went wrong
           </h2>
           <p className="text-gray-600 mb-6 text-lg">{error}</p>
-          <button 
+          <button
             onClick={fetchAllProducts}
             className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-2xl hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
           >
@@ -225,7 +227,8 @@ const viewProductDetails = (tourId, contractId) => {
             Dubai Tours & Activities
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover amazing experiences in Dubai with our curated selection of tours
+            Discover amazing experiences in Dubai with our curated selection of
+            tours
           </p>
         </motion.div>
 
@@ -273,22 +276,22 @@ const viewProductDetails = (tourId, contractId) => {
               </label>
               <div className="flex bg-gray-100 rounded-2xl p-1">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => setViewMode("grid")}
                   className={`flex items-center gap-2 flex-1 py-2 px-4 rounded-xl transition-all duration-300 text-sm font-medium ${
-                    viewMode === 'grid'
-                      ? 'bg-blue-500 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-800'
+                    viewMode === "grid"
+                      ? "bg-blue-500 text-white shadow-lg"
+                      : "text-gray-600 hover:text-gray-800"
                   }`}
                 >
                   <Grid className="w-4 h-4" />
                   Grid
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => setViewMode("list")}
                   className={`flex items-center gap-2 flex-1 py-2 px-4 rounded-xl transition-all duration-300 text-sm font-medium ${
-                    viewMode === 'list'
-                      ? 'bg-blue-500 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-800'
+                    viewMode === "list"
+                      ? "bg-blue-500 text-white shadow-lg"
+                      : "text-gray-600 hover:text-gray-800"
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -300,7 +303,7 @@ const viewProductDetails = (tourId, contractId) => {
         </div>
 
         {/* Category Filters */}
-        <div className="flex overflow-x-auto whitespace-nowrap space-x-4 pb-3 mb-12 no-scrollbar justify-center">
+        <div className="flex overflow-x-auto whitespace-nowrap space-x-4 pb-3 mb-12 no-scrollbar justify-start">
           {categoryFilters.map((category) => {
             const IconComponent = category.icon;
             return (
@@ -317,11 +320,13 @@ const viewProductDetails = (tourId, contractId) => {
               >
                 <IconComponent className="w-4 h-4" />
                 {category.label}
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  categoryFilter === category.id
-                    ? "bg-white/20"
-                    : "bg-gray-100"
-                }`}>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    categoryFilter === category.id
+                      ? "bg-white/20"
+                      : "bg-gray-100"
+                  }`}
+                >
                   {category.count}
                 </span>
               </motion.button>
@@ -332,7 +337,11 @@ const viewProductDetails = (tourId, contractId) => {
         {/* Results Count */}
         <div className="mb-8 text-center">
           <p className="text-lg text-gray-600">
-            Showing <span className="font-bold text-blue-600">{filteredProducts.length}</span> of {products.length} tours
+            Showing{" "}
+            <span className="font-bold text-blue-600">
+              {filteredProducts.length}
+            </span>{" "}
+            of {products.length} tours
           </p>
         </div>
 
@@ -343,12 +352,12 @@ const viewProductDetails = (tourId, contractId) => {
             const categoryProducts = products.filter(
               (product) => product.cityTourType === category
             );
-            
+
             if (categoryProducts.length === 0) return null;
-            
+
             return (
-              <motion.section 
-                key={category} 
+              <motion.section
+                key={category}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 className={`${getCategoryBg(category)} py-16 mb-12 rounded-3xl`}
@@ -358,18 +367,20 @@ const viewProductDetails = (tourId, contractId) => {
                     const IconComponent = getIconComponent(category);
                     return <IconComponent className="w-8 h-8 text-gray-700" />;
                   })()}
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-800">
                     {category}
                   </h3>
-                  <span className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold text-gray-700">
+                  <span className="bg-white/80 backdrop-blur-sm border border-gray-200 px-3 text-center py-1 rounded-full text-sm font-semibold text-gray-700">
                     {categoryProducts.length} tours
                   </span>
                 </div>
-                <div className={
-                  viewMode === 'grid' 
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-6"
-                    : "space-y-6 px-6"
-                }>
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-6"
+                      : "space-y-6 px-6"
+                  }
+                >
                   {categoryProducts.map((product, index) => (
                     <ProductCard
                       key={product.tourId}
@@ -405,11 +416,13 @@ const viewProductDetails = (tourId, contractId) => {
                 {filteredProducts.length} tours
               </span>
             </div>
-            <div className={
-              viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-6"
-                : "space-y-6 px-6"
-            }>
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-6"
+                  : "space-y-6 px-6"
+              }
+            >
               {filteredProducts.map((product, index) => (
                 <ProductCard
                   key={product.tourId}
@@ -428,7 +441,7 @@ const viewProductDetails = (tourId, contractId) => {
 
         {/* Empty state */}
         {filteredProducts.length === 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16 bg-white rounded-3xl shadow-xl"
@@ -438,12 +451,13 @@ const viewProductDetails = (tourId, contractId) => {
               No tours found
             </h3>
             <p className="text-gray-600 mb-6">
-              Try adjusting your search filters to find amazing Dubai experiences
+              Try adjusting your search filters to find amazing Dubai
+              experiences
             </p>
             <button
               onClick={() => {
-                setSearchTerm('');
-                setCategoryFilter('all');
+                setSearchTerm("");
+                setCategoryFilter("all");
               }}
               className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-2xl hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
             >
@@ -453,7 +467,7 @@ const viewProductDetails = (tourId, contractId) => {
         )}
 
         {/* Features Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           className="mt-20 bg-white rounded-3xl shadow-xl p-12"
@@ -462,31 +476,41 @@ const viewProductDetails = (tourId, contractId) => {
             <h3 className="text-3xl font-bold text-gray-800 mb-4">
               Why Choose Our Dubai Tours?
             </h3>
-            <p className="text-xl text-gray-600">Experience the magic with confidence</p>
+            <p className="text-xl text-gray-600">
+              Experience the magic with confidence
+            </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center group">
               <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform group-hover:scale-110 transition-transform duration-300">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800">Free Cancellation</h4>
-              <p className="text-gray-600">Cancel up to 24 hours before for a full refund</p>
+              <h4 className="text-xl font-bold mb-3 text-gray-800">
+                Free Cancellation
+              </h4>
+              <p className="text-gray-600">
+                Cancel up to 24 hours before for a full refund
+              </p>
             </div>
-            
+
             <div className="text-center group">
               <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform group-hover:scale-110 transition-transform duration-300">
                 <Star className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800">5-Star Rated</h4>
+              <h4 className="text-xl font-bold mb-3 text-gray-800">
+                5-Star Rated
+              </h4>
               <p className="text-gray-600">Thousands of satisfied customers</p>
             </div>
-            
+
             <div className="text-center group">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform group-hover:scale-110 transition-transform duration-300">
                 <Heart className="w-8 h-8 text-white" />
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800">Secure Booking</h4>
+              <h4 className="text-xl font-bold mb-3 text-gray-800">
+                Secure Booking
+              </h4>
               <p className="text-gray-600">Your information is safe with us</p>
             </div>
           </div>
@@ -497,51 +521,62 @@ const viewProductDetails = (tourId, contractId) => {
 }
 
 // Product Card Component
-function ProductCard({ product, index, viewMode, onViewDetails, formatPrice, getImageUrl, getRatingStars }) {
+function ProductCard({
+  product,
+  index,
+  viewMode,
+  onViewDetails,
+  formatPrice,
+  getImageUrl,
+  getRatingStars,
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       className={`group bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 ${
-        viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
+        viewMode === "list" ? "flex flex-col md:flex-row" : ""
       }`}
     >
       {/* Product Image */}
-      <div className={`relative overflow-hidden ${
-        viewMode === 'list' ? 'md:w-80 h-64 md:h-auto' : 'h-64'
-      }`}>
+      <div
+        className={`relative overflow-hidden ${
+          viewMode === "list" ? "md:w-80 h-64 md:h-auto" : "h-64"
+        }`}
+      >
         <img
           src={getImageUrl(product.imagePath)}
           alt={product.tourName}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80';
+            e.target.src =
+              "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=80";
           }}
         />
-        
+
         {/* Rating Badge */}
-        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-2xl shadow-lg">
+        <div className="absolute top-4 right-1 sm:right-4 bg-white/95 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-2xl shadow-lg">
           <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-            <span className="text-sm font-bold text-gray-800">
-              {product.rating || '5.0'}
+            <Star className=" w-3 sm:w-4 h-3 sm:h-4 text-yellow-400 fill-current" />
+            <span className="text-[12px] sm:text-sm font-bold text-gray-800">
+              {product.rating || "5.0"}
             </span>
             {product.reviewCount > 0 && (
-              <span className="text-xs text-gray-500 ml-1">
+              <span className="text-[12px] sm:text-sx text-gray-500 ml-1">
                 ({product.reviewCount})
               </span>
             )}
           </div>
         </div>
-        
+
         {/* Category Badge */}
         {product.cityTourType && (
-          <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-2 rounded-2xl text-sm font-medium shadow-lg">
+          <div className="absolute top-4 left-1 sm:left-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-2xl text-[12px] sm:text-sm font-medium shadow-lg">
             {product.cityTourType}
           </div>
         )}
-        
+
         {/* Recommended Badge */}
         {product.recommended && (
           <div className="absolute bottom-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-2 rounded-2xl text-sm font-bold shadow-lg">
@@ -558,23 +593,34 @@ function ProductCard({ product, index, viewMode, onViewDetails, formatPrice, get
       </div>
 
       {/* Product Content */}
-      <div className={`p-6 flex flex-col ${viewMode === 'list' ? 'flex-1' : ''}`}>
+      <div
+        className={`p-6 flex flex-col ${viewMode === "list" ? "flex-1" : ""}`}
+      >
         <div className="flex-1">
           <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300">
             {product.tourName}
           </h3>
-          
-          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-            {product.tourShortDescription || `Discover the magic of ${product.cityName || 'Dubai'} with this amazing ${product.cityTourType?.toLowerCase() || 'tour'} experience. Create unforgettable memories with our expertly guided adventure.`}
-          </p>
+
+          <p
+            className="text-gray-600 text-sm mb-4 line-clamp-3"
+            dangerouslySetInnerHTML={{
+              __html:
+                product.tourShortDescription ||
+                `Discover the magic of ${
+                  product.cityName || "Dubai"
+                } with this amazing ${
+                  product.cityTourType?.toLowerCase() || "tour"
+                } experience. Create unforgettable memories with our expertly guided adventure.`,
+            }}
+          />
 
           <div className="space-y-2 mb-4">
             {/* Duration */}
             <div className="flex items-center text-sm text-gray-600">
               <Clock className="w-4 h-4 mr-2" />
-              <span>{product.duration || '4 Hours (Approx)'}</span>
+              <span>{product.duration || "4 Hours (Approx)"}</span>
             </div>
-            
+
             {/* Reviews */}
             {product.reviewCount > 0 && (
               <div className="flex items-center text-sm text-gray-600">
@@ -582,7 +628,7 @@ function ProductCard({ product, index, viewMode, onViewDetails, formatPrice, get
                 <span>{product.reviewCount.toLocaleString()} reviews</span>
               </div>
             )}
-            
+
             {/* Cancellation Policy */}
             {product.cancellationPolicyName && (
               <div className="flex items-center text-sm text-green-600">
@@ -603,13 +649,15 @@ function ProductCard({ product, index, viewMode, onViewDetails, formatPrice, get
                 <span className="text-sm text-gray-500 block">per person</span>
               </div>
             ) : (
-              <span className="text-green-600 font-semibold">Price available</span>
+              <span className="text-green-600 font-semibold">
+                Price available
+              </span>
             )}
           </div>
 
           <button
-           onClick={() => onViewDetails(product.tourId, product.contractId)}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
+            onClick={() => onViewDetails(product.tourId, product.contractId)}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-3 sm:px-6 py-1 sm:py-3 rounded-2xl transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             View Details
           </button>

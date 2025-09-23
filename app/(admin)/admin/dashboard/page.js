@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import {
   Users, ShoppingBag, DollarSign, FileText,
-  Globe, Mail, Percent, Network, CreditCard,
-  TrendingUp, ArrowUpRight, ArrowDownRight, Activity, Zap,
-  UserCheck, Package, ShoppingCart, BarChart3, Eye,
+  TrendingUp, Zap,
+  UserCheck, Package, ShoppingCart, Eye,
   Settings, Calendar, UserCog, CreditCardIcon
 } from "lucide-react";
 import { adminApi } from "@/lib/api";

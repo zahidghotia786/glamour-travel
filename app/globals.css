@@ -70,3 +70,22 @@
 html {
   scroll-behavior: smooth;
 }
+
+
+
+/* Custom styles for dashboard */
+.dashboard-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+/* Smooth transitions */
+.sidebar-transition {
+  transition: transform 0.3s ease-in-out;
+}

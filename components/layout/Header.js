@@ -22,7 +22,7 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "Home", icon: Home },
     { href: "/search", label: "Tickets", icon: Ticket },
-    { href: "/booking", label: "Bookings", icon: Calendar },
+    { href: "/events", label: "Events", icon: Calendar },
   ];
 
   const languages = [
@@ -65,8 +65,7 @@ export default function Header() {
   const getDashboardLink = () => {
     if (!user) return "/";
     if (user.role === "ADMIN") return "/admin/dashboard";
-    if (user.role === "B2B") return "/b2b/dashboard";
-    return "/"; // Customer → homepage
+    return "/profile"; // Customer → homepage
   };
 
   const getRoleIcon = (role) => {
@@ -260,13 +259,7 @@ export default function Header() {
                             <BarChart3 className="w-5 h-5" />
                             <span className="font-medium">Dashboard</span>
                           </Link>
-                          <button
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 w-full px-4 py-3 text-left text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 rounded-2xl transition-all duration-200"
-                          >
-                            <Settings className="w-5 h-5" />
-                            <span className="font-medium">Settings</span>
-                          </button>
+
                           <div className="h-px bg-gray-200 mx-4 my-2" />
                           <button
                             onClick={handleLogout}

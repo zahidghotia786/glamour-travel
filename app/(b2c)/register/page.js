@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import B2CPageLayout from "../B2CPageLayout";
 
 
 export default function RegisterPage() {
@@ -103,6 +104,7 @@ const handleRegister = async (e) => {
   ];
 
   return (
+    <B2CPageLayout>
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -393,5 +395,6 @@ const handleRegister = async (e) => {
         </motion.div>
       </motion.div>
     </div>
+    </B2CPageLayout>
   );
 }

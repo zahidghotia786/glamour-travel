@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import B2CPageLayout from "../B2CPageLayout";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -175,7 +176,9 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
+      <B2CPageLayout>
       <ResetPasswordContent />
+      </B2CPageLayout>
     </Suspense>
   );
 }

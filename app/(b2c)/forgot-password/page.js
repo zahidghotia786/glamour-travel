@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import B2CPageLayout from "../B2CPageLayout";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -40,6 +41,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
+      <B2CPageLayout>
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -112,5 +114,6 @@ export default function ForgotPasswordPage() {
         </div>
       </motion.div>
     </div>
+    </B2CPageLayout>
   );
 }

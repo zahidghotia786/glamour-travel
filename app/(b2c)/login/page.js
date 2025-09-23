@@ -5,6 +5,7 @@ import { Eye, EyeOff, Mail, Lock, Globe, ArrowRight, Key } from "lucide-react";
 import { fetchFromAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import B2CPageLayout from "../B2CPageLayout";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,8 +32,6 @@ export default function LoginPage() {
       body: JSON.stringify({ email, password }),
     });
 
-    console.log("API Response:", response); // Debugging ke liye
-
     // Check if response exists
     if (!response) {
       throw new Error("No response received from server");
@@ -46,16 +45,14 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(response.user));
 
       // Show success message
-      toast.success(response.message || "Login successful!");
+      // toast.success(response.message || "Login successful!");
 
       // Redirect based on role
       const role = response.role?.toLowerCase();
       if (role === "admin") {
         router.push("/admin/dashboard");
-      } else if (role === "b2b") {
-        router.push("/b2b/dashboard");
       } else {
-        router.push("/");
+        router.push("/profile");
       }
       return;
     }
@@ -68,12 +65,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Handle other API errors
-    if (response.error) {
-      setError(response.error);
-      toast.error(response.error);
-      return;
-    }
 
     // Fallback for unexpected response format
     throw new Error("Unexpected response format from server");
@@ -112,7 +103,7 @@ export default function LoginPage() {
     ) ? errorMap[Object.keys(errorMap).find(key => errorMessage.includes(key))] : errorMessage;
     
     setError(finalErrorMessage);
-    toast.error(finalErrorMessage);
+    log.error(finalErrorMessage);
   } finally {
     setLoading(false);
   }
@@ -156,6 +147,7 @@ export default function LoginPage() {
   };
 
   return (
+    <B2CPageLayout>
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -425,5 +417,6 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+    </B2CPageLayout>
   );
 }

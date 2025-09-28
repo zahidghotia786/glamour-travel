@@ -54,6 +54,35 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [params.id, contractId]);
 
+
+  useEffect(() => {
+    if (product) {
+      // remove old tour data
+      localStorage.removeItem("selectedTour");
+
+      // pick only important fields
+      const selectedData = {
+        tourId: product.tourId,
+        tourName: product.tourName,
+        cityName: product.cityName,
+        countryName: product.countryName,
+        cityTourType: product.cityTourType,
+        duration: product.duration,
+        reportingTime: product.reportingTime,
+        startTime: product.startTime,
+        departurePoint: product.departurePoint,
+        cancellationPolicyName: product.cancellationPolicyName,
+        rating: product.rating,
+        reviewCount: product.reviewCount,
+      };
+
+      // save new data
+      localStorage.setItem("selectedTour", JSON.stringify(selectedData));
+    }
+  }, [product]);
+
+
+
   const shareProduct = async () => {
     if (navigator.share) {
       try {
@@ -70,6 +99,8 @@ export default function ProductDetailPage() {
       alert("Link copied to clipboard!");
     }
   };
+
+  
 
   const nextImage = () => {
     setCurrentImageIndex(

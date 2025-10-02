@@ -23,30 +23,45 @@ export default function BookingCard({ price }) {
 
 
     // Format date for display and URL
-  const formatDate = (date) => {
-    if (!date) return null;
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0]; // YYYY-MM-DD format for URL
-    }
-    // Handle date range case
-    if (Array.isArray(date) && date[0]) {
-      return date[0].toISOString().split('T')[0];
-    }
+const formatDate = (date) => {
+  if (!date) return null;
+  
+  let actualDate;
+  if (date instanceof Date) {
+    actualDate = date;
+  } else if (Array.isArray(date) && date[0]) {
+    actualDate = date[0];
+  } else {
     return null;
-  };
+  }
 
+    const year = actualDate.getFullYear();
+  const month = String(actualDate.getMonth() + 1).padStart(2, '0');
+  const day = String(actualDate.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`; // YYYY-MM-DD format
+};
 
   // Format date for display only
-  const formatDisplayDate = (date) => {
-    if (!date) return null;
-    if (date instanceof Date) {
-      return date.toDateString();
-    }
-    if (Array.isArray(date) && date[0]) {
-      return date[0].toDateString();
-    }
+const formatDisplayDate = (date) => {
+  if (!date) return null;
+  
+  let actualDate;
+  if (date instanceof Date) {
+    actualDate = date;
+  } else if (Array.isArray(date) && date[0]) {
+    actualDate = date[0];
+  } else {
     return null;
-  };
+  }
+    return actualDate.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 
 
     const handleCheckAvailability = () => {

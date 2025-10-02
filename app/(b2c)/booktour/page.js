@@ -1,60 +1,135 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Users, Phone, Mail, User, CreditCard, Check } from 'lucide-react';
-import B2CPageLayout from '../B2CPageLayout';
+import React, { useState, useEffect } from "react";
+import B2CPageLayout from "../B2CPageLayout";
+import TourSummarySection from "./TourSummarySection";
+import PassengerInfoSection from "./PassengerInfoSection";
+import BookingReferenceSection from "./BookingReferenceSection";
+import BookingSummarySection from "./BookingSummarySection";
+import PaymentMethodSection from "./PaymentMethodSection";
+import { createBookingWithPayment } from "@/lib/bookingService"; // 🛠️ Use the new function
+import toast from "react-hot-toast";
+
+// ✅ Helper to generate uniqueNo
+function generateUniqueNo(clientName, prefix = "GLAMOUR") {
+  const cleanName = clientName.replace(/\s+/g, "").toUpperCase();
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  return `${prefix}-${cleanName}-${randomNum}`;
+}
 
 export default function TourBookingPage() {
   const [urlParams, setUrlParams] = useState({});
   const [formData, setFormData] = useState({
-    uniqueNo: Math.floor(Math.random() * 1000000),
+    uniqueNo: generateUniqueNo("CLIENT"),
     adult: 1,
     child: 0,
     infant: 0,
-    pickup: '',
+    pickup: "",
     clientReferenceNo: `REF-${Date.now()}`,
-    leadPassenger: {
-      serviceType: 'tour',
-      prefix: 'Mr.',
-      firstName: '',
-      lastName: '',
-      email: '',
-      mobile: '',
-      nationality: '',
-      message: '',
-      leadPassenger: 1,
-      paxType: 'Adult'
-    }
+    paymentMethod: "ziina",
+    passengers: [
+      {
+        serviceType: "tour",
+        prefix: "Mr.",
+        firstName: "",
+        lastName: "",
+        email: "",
+        mobile: "",
+        nationality: "",
+        message: "",
+        leadPassenger: 1,
+        paxType: "Adult",
+      },
+    ],
   });
+
+  const [loading, setLoading] = useState(false);
+  const [bookingResult, setBookingResult] = useState(null);
+
+  // ✅ Update uniqueNo when lead passenger name changes
+  useEffect(() => {
+    const lead = formData.passengers[0];
+    if (lead?.firstName) {
+      setFormData((prev) => ({
+        ...prev,
+        uniqueNo: generateUniqueNo(lead.firstName),
+      }));
+    }
+  }, [formData.passengers[0]?.firstName]);
 
   // Parse URL parameters on component mount
   useEffect(() => {
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = {
-      tourId: urlSearchParams.get('tourId') || '',
-      optionId: urlSearchParams.get('optionId') || '',
-      tourDate: urlSearchParams.get('tourDate') || '',
-      startTime: decodeURIComponent(urlSearchParams.get('startTime') || ''),
-      transferId: urlSearchParams.get('transferId') || '',
-      adultprice: urlSearchParams.get('adultprice') || '0',
-      childprice: urlSearchParams.get('childprice') || '0'
+      tourId: urlSearchParams.get("tourId") || "",
+      optionId: urlSearchParams.get("optionId") || "",
+      tourDate: urlSearchParams.get("tourDate") || "",
+      startTime: decodeURIComponent(urlSearchParams.get("startTime") || ""),
+      transferId: urlSearchParams.get("transferId") || "",
+      adultprice: urlSearchParams.get("adultprice") || "0",
+      childprice: urlSearchParams.get("childprice") || "0",
+      timeSlot: urlSearchParams.get("timeSlot") || "",
     };
     setUrlParams(params);
   }, []);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+  // Update passengers when counts change
+  useEffect(() => {
+    updatePassengers();
+  }, [formData.adult, formData.child, formData.infant]);
+
+  const updatePassengers = () => {
+    const totalPassengers = formData.adult + formData.child + formData.infant;
+    const currentPassengers = [...formData.passengers];
+
+    if (currentPassengers.length < totalPassengers) {
+      for (let i = currentPassengers.length; i < totalPassengers; i++) {
+        let paxType = "Adult";
+        let prefix = "Mr.";
+
+        if (i >= formData.adult && i < formData.adult + formData.child) {
+          paxType = "Child";
+          prefix = "Master";
+        } else if (i >= formData.adult + formData.child) {
+          paxType = "Infant";
+          prefix = "Baby";
+        }
+
+        currentPassengers.push({
+          serviceType: "tour",
+          prefix: prefix,
+          firstName: "",
+          lastName: "",
+          email: i === 0 ? formData.passengers[0]?.email : "",
+          mobile: i === 0 ? formData.passengers[0]?.mobile : "",
+          nationality: i === 0 ? formData.passengers[0]?.nationality : "",
+          message: "",
+          leadPassenger: i === 0 ? 1 : 0,
+          paxType: paxType,
+        });
+      }
+    } else if (currentPassengers.length > totalPassengers) {
+      currentPassengers.splice(totalPassengers);
+    }
+
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      passengers: currentPassengers,
     }));
   };
 
-  const handleLeadPassengerChange = (field, value) => {
-    setFormData(prev => ({
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
-      leadPassenger: {
-        ...prev.leadPassenger,
-        [field]: value
-      }
+      [field]: value,
+    }));
+  };
+
+  const handlePassengerChange = (index, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      passengers: prev.passengers.map((passenger, i) =>
+        i === index ? { ...passenger, [field]: value } : passenger
+      ),
     }));
   };
 
@@ -64,398 +139,232 @@ export default function TourBookingPage() {
     return adultTotal + childTotal;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Generate passenger array based on counts but only with lead passenger details
-    const passengers = [];
-    
-    // Add lead passenger
-    passengers.push(formData.leadPassenger);
-    
-    // Add remaining passengers with minimal info
-    for (let i = 1; i < formData.adult; i++) {
-      passengers.push({
-        serviceType: 'tour',
-        prefix: 'Mr.',
-        firstName: `Adult ${i + 1}`,
-        lastName: 'Passenger',
-        email: formData.leadPassenger.email,
-        mobile: formData.leadPassenger.mobile,
-        nationality: formData.leadPassenger.nationality,
-        message: '',
-        leadPassenger: 0,
-        paxType: 'Adult'
-      });
-    }
-    
-    for (let i = 0; i < formData.child; i++) {
-      passengers.push({
-        serviceType: 'tour',
-        prefix: 'Master',
-        firstName: `Child ${i + 1}`,
-        lastName: 'Passenger',
-        email: formData.leadPassenger.email,
-        mobile: formData.leadPassenger.mobile,
-        nationality: formData.leadPassenger.nationality,
-        message: '',
-        leadPassenger: 0,
-        paxType: 'Child'
-      });
-    }
-    
-    for (let i = 0; i < formData.infant; i++) {
-      passengers.push({
-        serviceType: 'tour',
-        prefix: 'Baby',
-        firstName: `Infant ${i + 1}`,
-        lastName: 'Passenger',
-        email: formData.leadPassenger.email,
-        mobile: formData.leadPassenger.mobile,
-        nationality: formData.leadPassenger.nationality,
-        message: '',
-        leadPassenger: 0,
-        paxType: 'Infant'
-      });
-    }
-    
-    const bookingData = {
-      uniqueNo: formData.uniqueNo,
-      TourDetails: [{
-        serviceUniqueId: Math.floor(Math.random() * 999999),
-        tourId: parseInt(urlParams.tourId),
-        optionId: parseInt(urlParams.optionId),
-        adult: formData.adult,
-        child: formData.child,
-        infant: formData.infant,
-        tourDate: urlParams.tourDate,
-        timeSlotId: 1,
-        startTime: urlParams.startTime,
-        transferId: parseInt(urlParams.transferId),
-        pickup: formData.pickup,
-        adultRate: parseFloat(urlParams.adultprice),
-        childRate: parseFloat(urlParams.childprice),
-        serviceTotal: calculateTotal().toString()
-      }],
-      passengers: passengers,
-      clientReferenceNo: formData.clientReferenceNo
+  const prepareBookingData = () => {
+    const generateServiceUniqueId = () => {
+      return Math.floor(100000 + Math.random() * 900000);
     };
 
-    console.log('Booking Data:', bookingData);
-    // Here you would typically send the data to your booking API
-    alert('Booking submitted successfully! Check console for data structure.');
+    const passengersWithReference = formData.passengers.map((passenger, index) => {
+      const isLeadPassenger = index === 0 ? 1 : 0;
+      
+      return {
+        serviceType: "tour",
+        prefix: passenger.prefix,
+        firstName: passenger.firstName,
+        lastName: passenger.lastName,
+        email: formData.passengers[0].email,
+        mobile: formData.passengers[0].mobile,
+        nationality: formData.passengers[0].nationality,
+        message: passenger.message || (index === 0 ? "Lead passenger" : `Additional ${passenger.paxType.toLowerCase()} passenger`),
+        leadPassenger: isLeadPassenger,
+        paxType: passenger.paxType,
+        clientReferenceNo: formData.clientReferenceNo
+      };
+    });
+
+    const totalAmount = calculateTotal();
+    
+    return {
+      uniqueNo: formData.uniqueNo,
+      TourDetails: [
+        {
+          serviceUniqueId: generateServiceUniqueId(),
+          tourId: parseInt(urlParams.tourId) || 0,
+          optionId: parseInt(urlParams.optionId) || 0,
+          adult: parseInt(formData.adult) || 0,
+          child: parseInt(formData.child) || 0,
+          infant: parseInt(formData.infant) || 0,
+          tourDate: urlParams.tourDate || "",
+          timeSlotId: parseInt(urlParams.timeSlot) || 0,
+          startTime: urlParams.startTime || "",
+          transferId: parseInt(urlParams.transferId) || 0,
+          pickup: formData.pickup || "",
+          adultRate: parseFloat(urlParams.adultprice) || 0,
+          childRate: parseFloat(urlParams.childprice) || 0,
+          serviceTotal: totalAmount.toString()
+        }
+      ],
+      passengers: passengersWithReference,
+      clientReferenceNo: formData.clientReferenceNo,
+      paymentMethod: formData.paymentMethod
+    };
   };
 
-  return (
-          <B2CPageLayout>
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-center mb-2">Complete Your Booking</h1>
-          <p className="text-center text-blue-100">Just a few more steps to confirm your amazing tour experience</p>
-        </div>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const leadPassenger = formData.passengers[0];
+    if (
+      !leadPassenger.firstName ||
+      !leadPassenger.lastName ||
+      !leadPassenger.email ||
+      !leadPassenger.mobile ||
+      !leadPassenger.nationality
+    ) {
+      toast.error("Please fill all required fields for lead passenger");
+      return;
+    }
+
+    const invalidPassengers = formData.passengers
+      .slice(1)
+      .filter((p) => !p.firstName || !p.lastName);
+
+    if (invalidPassengers.length > 0) {
+      toast.error("Please fill first name and last name for all additional passengers");
+      return;
+    }
+
+    setLoading(true);
+    let toastId;
+
+    try {
+      toastId = toast.loading("Processing your booking and payment...");
+
+      const bookingData = prepareBookingData();
+      
+      console.log("=== DEBUG PASSENGER DATA ===");
+      bookingData.passengers.forEach((passenger, index) => {
+        console.log(`Passenger[${index}]:`, {
+          firstName: passenger.firstName,
+          lastName: passenger.lastName,
+          leadPassenger: passenger.leadPassenger,
+          type: typeof passenger.leadPassenger,
+          paxType: passenger.paxType
+        });
+      });
+      
+      // 🛠️ FIXED: Use the new integrated function
+      const result = await createBookingWithPayment(bookingData);
+      setBookingResult(result);
+
+      if (result.statuscode === 200 && result.result) {
+        toast.dismiss(toastId);
+        
+        // 🛠️ FIXED: Check for payment redirect URL in the new response structure
+        if (result.result.payment && result.result.payment.paymentRedirectUrl) {
+          toast.success("🎉 Booking created! Redirecting to payment...");
+          
+          // Auto-redirect to payment
+          setTimeout(() => {
+            window.location.href = result.result.payment.paymentRedirectUrl;
+          }, 1500);
+        } else if (result.result.booking) {
+          // Backward compatibility - booking succeeded but payment setup failed
+          toast.success("🎉 Booking created! Please complete payment from your bookings page.");
+        } else {
+          // Original response structure
+          toast.success("🎉 Booking submitted successfully!");
+        }
+        
+      } else {
+        const errorMessage = result.error?.description || result.error || 'Booking failed';
+        toast.dismiss(toastId);
+        toast.error(`❌ ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Booking error:", error);
+      
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+      
+      let userFriendlyMessage = 'Booking failed. Please try again.';
+      
+      if (error.message.includes('Child are not allowed')) {
+        userFriendlyMessage = '🚫 Children are not allowed for this tour. Please remove child passengers and try again.';
+      } else if (error.message.includes('network') || error.message.includes('Network')) {
+        userFriendlyMessage = '🌐 Network error: Please check your internet connection.';
+      } else if (error.message.includes('timeout')) {
+        userFriendlyMessage = '⏰ Request timeout: Please try again.';
+      } else if (error.message.includes('session expired') || error.message.includes('unauthorized')) {
+        userFriendlyMessage = '🔐 Session expired. Please login again.';
+      } else {
+        userFriendlyMessage = error.message || 'Booking failed. Please try again.';
+      }
+
+      toast.error(userFriendlyMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderBookingForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <TourSummarySection
+        urlParams={urlParams}
+        pickup={formData.pickup}
+        onPickupChange={(value) => handleInputChange("pickup", value)}
+      />
+
+      <PassengerInfoSection
+        formData={formData}
+        onInputChange={handleInputChange}
+        onPassengerChange={handlePassengerChange}
+      />
+
+      <PaymentMethodSection
+        paymentMethod={formData.paymentMethod}
+        onPaymentMethodChange={(method) => handleInputChange("paymentMethod", method)}
+      />
+
+      <BookingReferenceSection
+        clientReferenceNo={formData.clientReferenceNo}
+        onReferenceChange={(value) =>
+          handleInputChange("clientReferenceNo", value)
+        }
+      />
+
+      {/* Submit Button for Mobile */}
+      <div className="lg:hidden bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+        >
+          {loading ? "Processing..." : `Book Now - $${calculateTotal().toFixed(2)}`}
+        </button>
       </div>
+    </form>
+  );
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8">
-            
-            {/* Main Booking Form */}
-            <div className="lg:col-span-2">
-              <div className="space-y-6">
-                
-                {/* Tour Summary Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                    <Calendar className="mr-3 text-blue-600" />
-                    Tour Details
-                  </h2>
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="w-5 h-5 mr-2 text-blue-500" />
-                        <span>Date: {urlParams.tourDate}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <Clock className="w-5 h-5 mr-2 text-green-500" />
-                        <span>Time: {urlParams.startTime}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="w-5 h-5 mr-2 text-red-500" />
-                        <span>Tour ID: {urlParams.tourId}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <Users className="w-5 h-5 mr-2 text-purple-500" />
-                        <span>Transfer ID: {urlParams.transferId}</span>
-                      </div>
-                    </div>
-                  </div>
+  return (
+    <B2CPageLayout>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">
+              Complete Your Booking
+            </h1>
+            <p className="text-center text-blue-100 text-sm md:text-base">
+              Just a few more steps to confirm your amazing tour experience
+            </p>
+          </div>
+        </div>
 
-                  {/* Pickup Location */}
-                  <div className="mt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pickup Location (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.pickup}
-                      onChange={(e) => handleInputChange('pickup', e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter pickup location if required"
-                    />
-                  </div>
-                </div>
-
-                {/* Passenger Information */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-6">
-                    <User className="mr-3 text-blue-600" />
-                    Lead Passenger Information
-                  </h2>
-
-                  {/* Passenger Counts */}
-                  <div className="grid md:grid-cols-3 gap-4 mb-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Adults</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={formData.adult}
-                        onChange={(e) => handleInputChange('adult', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Children</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.child}
-                        onChange={(e) => handleInputChange('child', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Infants</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.infant}
-                        onChange={(e) => handleInputChange('infant', parseInt(e.target.value))}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Lead Passenger Details */}
-                  <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
-                    <h3 className="font-semibold text-lg text-gray-800 mb-4">
-                      Lead Passenger Details
-                      <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                        Primary Contact
-                      </span>
-                    </h3>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Prefix</label>
-                        <select
-                          value={formData.leadPassenger.prefix}
-                          onChange={(e) => handleLeadPassengerChange('prefix', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        >
-                          <option value="Mr.">Mr.</option>
-                          <option value="Ms.">Ms.</option>
-                          <option value="Mrs.">Mrs.</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                        <input
-                          type="text"
-                          value={formData.leadPassenger.firstName}
-                          onChange={(e) => handleLeadPassengerChange('firstName', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter first name"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                        <input
-                          type="text"
-                          value={formData.leadPassenger.lastName}
-                          onChange={(e) => handleLeadPassengerChange('lastName', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter last name"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          <Mail className="inline w-4 h-4 mr-1" />
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.leadPassenger.email}
-                          onChange={(e) => handleLeadPassengerChange('email', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter email address"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          <Phone className="inline w-4 h-4 mr-1" />
-                          Mobile
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.leadPassenger.mobile}
-                          onChange={(e) => handleLeadPassengerChange('mobile', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter mobile number"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-                        <input
-                          type="text"
-                          value={formData.leadPassenger.nationality}
-                          onChange={(e) => handleLeadPassengerChange('nationality', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter nationality"
-                          required
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Message/Notes</label>
-                        <textarea
-                          value={formData.leadPassenger.message}
-                          onChange={(e) => handleLeadPassengerChange('message', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Any special requests or information"
-                          rows="3"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Passenger Summary */}
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-2">Booking Summary:</h4>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div>• {formData.adult} Adult(s) - Lead passenger details will be used for primary contact</div>
-                      {formData.child > 0 && <div>• {formData.child} Child(ren) - Will be registered under lead passenger</div>}
-                      {formData.infant > 0 && <div>• {formData.infant} Infant(s) - Will be registered under lead passenger</div>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Booking Reference */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                    Booking Reference
-                  </h2>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Client Reference Number
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.clientReferenceNo}
-                      onChange={(e) => handleInputChange('clientReferenceNo', e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                </div>
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
+              {/* Main Booking Form */}
+              <div className="lg:col-span-2">
+                {renderBookingForm()}
               </div>
-            </div>
 
-            {/* Booking Summary Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <CreditCard className="mr-3 text-blue-600" />
-                    Booking Summary
-                  </h3>
-
-                  <div className="space-y-4 mb-6">
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-600">Adults ({formData.adult})</span>
-                      <span className="font-semibold">${(formData.adult * parseFloat(urlParams.adultprice || 0)).toFixed(2)}</span>
-                    </div>
-                    
-                    {formData.child > 0 && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Children ({formData.child})</span>
-                        <span className="font-semibold">${(formData.child * parseFloat(urlParams.childprice || 0)).toFixed(2)}</span>
-                      </div>
-                    )}
-
-                    {formData.infant > 0 && (
-                      <div className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Infants ({formData.infant})</span>
-                        <span className="font-semibold">FREE</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xl font-bold text-gray-800">Total Amount</span>
-                      <span className="text-2xl font-bold text-blue-600">${calculateTotal().toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mb-6 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Check className="w-4 h-4 text-green-500 mr-2" />
-                      Free cancellation up to 24 hours
-                    </div>
-                    <div className="flex items-center">
-                      <Check className="w-4 h-4 text-green-500 mr-2" />
-                      Instant confirmation
-                    </div>
-                    <div className="flex items-center">
-                      <Check className="w-4 h-4 text-green-500 mr-2" />
-                      Mobile ticket accepted
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg"
-                  >
-                    Complete Booking
-                  </button>
-
-                  <p className="text-xs text-gray-500 text-center mt-4">
-                    By completing this booking, you agree to our terms and conditions
-                  </p>
-                </div>
+              {/* Booking Summary Sidebar */}
+              <div className="lg:col-span-1">
+                <BookingSummarySection
+                  formData={formData}
+                  urlParams={urlParams}
+                  calculateTotal={calculateTotal}
+                  onSubmit={handleSubmit}
+                  loading={loading}
+                  paymentMethod={formData.paymentMethod}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </B2CPageLayout>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  XCircle,
   Loader2,
   Calendar,
   Clock,
@@ -10,21 +9,17 @@ import {
   MapPin,
   Users,
   Star,
-  Award,
   Info,
   ArrowRight,
   Shield,
   Timer,
-  Gift,
   ChevronRight,
   AlertCircle,
   Sparkles,
   Heart,
   Share,
-  Camera,
   Zap,
   Crown,
-  Check,
 } from "lucide-react";
 import B2CPageLayout from "../B2CPageLayout";
 
@@ -36,6 +31,7 @@ export default function AvailabilityPage({ searchParams }) {
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  console.log(tourData);
 
   // URL parameters
   const tourId = searchParams.get("tourId");
@@ -144,7 +140,7 @@ export default function AvailabilityPage({ searchParams }) {
     const optionKey = option.tourOptionId;
 
     try {
-      setAvailabilityLoading(prev => ({ ...prev, [optionKey]: true }));
+      setAvailabilityLoading((prev) => ({ ...prev, [optionKey]: true }));
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/tour/dubai/availability`,
@@ -167,18 +163,18 @@ export default function AvailabilityPage({ searchParams }) {
       const data = await response.json();
       console.log("✅ Availability API Response:", data);
 
-      setAvailability(prev => ({ 
-        ...prev, 
-        [optionKey]: data.result || null 
+      setAvailability((prev) => ({
+        ...prev,
+        [optionKey]: data.result || null,
       }));
     } catch (error) {
       console.error("❌ Availability Fetch Error:", error);
-      setAvailability(prev => ({ 
-        ...prev, 
-        [optionKey]: { status: 0, message: "Failed to check availability" } 
+      setAvailability((prev) => ({
+        ...prev,
+        [optionKey]: { status: 0, message: "Failed to check availability" },
       }));
     } finally {
-      setAvailabilityLoading(prev => ({ ...prev, [optionKey]: false }));
+      setAvailabilityLoading((prev) => ({ ...prev, [optionKey]: false }));
     }
   };
 
@@ -202,6 +198,11 @@ export default function AvailabilityPage({ searchParams }) {
       return;
     }
 
+    const timeSlotIndex =
+      availableTimeSlots.findIndex(
+        (slot) => slot.time === selectedTimeSlot.time
+      ) + 1;
+
     // Navigate to book tour page with required parameters
     const bookingParams = new URLSearchParams({
       tourId: option.tourId.toString(),
@@ -211,12 +212,11 @@ export default function AvailabilityPage({ searchParams }) {
       transferId: option.transferId.toString(),
       adultprice: option.adultPrice.toString(),
       childprice: option.childPrice.toString(),
+      timeSlot: timeSlotIndex.toString(),
     });
 
     window.location.href = `/booktour?${bookingParams.toString()}`;
   };
-
-
 
   // Formatting helpers
   const formatDate = (dateString) =>
@@ -241,29 +241,36 @@ export default function AvailabilityPage({ searchParams }) {
     switch (transferName) {
       case "Sharing Transfers":
         return {
-          gradient: "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700",
-          badgeGradient: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white",
+          gradient:
+            "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700",
+          badgeGradient:
+            "bg-gradient-to-r from-blue-500 to-indigo-600 text-white",
           icon: Users,
           badge: "Sharing",
         };
       case "Private Transfers":
         return {
-          gradient: "bg-gradient-to-br from-purple-500 via-purple-600 to-pink-700",
-          badgeGradient: "bg-gradient-to-r from-purple-500 to-pink-600 text-white",
+          gradient:
+            "bg-gradient-to-br from-purple-500 via-purple-600 to-pink-700",
+          badgeGradient:
+            "bg-gradient-to-r from-purple-500 to-pink-600 text-white",
           icon: Shield,
           badge: "Private",
         };
       case "Luxury Transfers":
         return {
-          gradient: "bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-700",
-          badgeGradient: "bg-gradient-to-r from-amber-500 to-orange-600 text-white",
+          gradient:
+            "bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-700",
+          badgeGradient:
+            "bg-gradient-to-r from-amber-500 to-orange-600 text-white",
           icon: Crown,
           badge: "Luxury",
         };
       default:
         return {
           gradient: "bg-gradient-to-br from-gray-500 via-gray-600 to-slate-700",
-          badgeGradient: "bg-gradient-to-r from-gray-500 to-slate-600 text-white",
+          badgeGradient:
+            "bg-gradient-to-r from-gray-500 to-slate-600 text-white",
           icon: MapPin,
           badge: "Standard",
         };
@@ -276,26 +283,24 @@ export default function AvailabilityPage({ searchParams }) {
     return selectedTimeSlot.availableOptions;
   };
 
-
-   // Check availability when option comes into view or on mount
+  // Check availability when option comes into view or on mount
   const handleOptionVisible = (option) => {
     const optionKey = option.tourOptionId;
     if (!availability[optionKey] && !availabilityLoading[optionKey]) {
       fetchAvailability(option);
     }
   };
-  
+
   const currentOptions = getCurrentOptions();
 
-
   // Parent component ke andar
-useEffect(() => {
-  if (!currentOptions) return;
+  useEffect(() => {
+    if (!currentOptions) return;
 
-  currentOptions.forEach((option) => {
-    handleOptionVisible(option); // availability check trigger
-  });
-}, [currentOptions]);
+    currentOptions.forEach((option) => {
+      handleOptionVisible(option); // availability check trigger
+    });
+  }, [currentOptions]);
 
   // Initial load
   useEffect(() => {
@@ -303,8 +308,6 @@ useEffect(() => {
       fetchTourOptions();
     }
   }, [tourId, travelDate, contractId]);
-
-  
 
   // Loading State with beautiful animation
   if (loading) {
@@ -373,7 +376,6 @@ useEffect(() => {
       </B2CPageLayout>
     );
   }
-
 
   return (
     <B2CPageLayout>
@@ -558,19 +560,25 @@ useEffect(() => {
                 {/* Single unified grid for all options */}
                 <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                    <h3 className="text-2xl font-bold mb-2">Choose Your Experience</h3>
-                    <p className="text-blue-100">All available options for your selected time</p>
+                    <h3 className="text-2xl font-bold mb-2">
+                      Choose Your Experience
+                    </h3>
+                    <p className="text-blue-100">
+                      All available options for your selected time
+                    </p>
                   </div>
 
                   <div className="p-6">
                     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {currentOptions.map((option) => {
                         const optionKey = option.tourOptionId;
-                        const isCheckingAvailability = availabilityLoading[optionKey];
+                        const isCheckingAvailability =
+                          availabilityLoading[optionKey];
                         const optionAvailability = availability[optionKey];
-                        const optionAvailable = optionAvailability ? isOptionAvailable(optionAvailability) : null;
+                        const optionAvailable = optionAvailability
+                          ? isOptionAvailable(optionAvailability)
+                          : null;
                         const styling = getTransferStyling(option.transferName);
-
 
                         return (
                           <div
@@ -579,7 +587,9 @@ useEffect(() => {
                           >
                             {/* Transfer type badge */}
                             <div className="absolute top-3 right-3">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${styling.badgeGradient}`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-bold ${styling.badgeGradient}`}
+                              >
                                 {styling.badge}
                               </span>
                             </div>
@@ -588,7 +598,9 @@ useEffect(() => {
                             <div className="mb-4">
                               <div className="text-2xl font-bold text-gray-900">
                                 ${option.adultPrice}
-                                <span className="text-sm text-gray-500 font-normal">/adult</span>
+                                <span className="text-sm text-gray-500 font-normal">
+                                  /adult
+                                </span>
                               </div>
                               {option.childPrice > 0 && (
                                 <div className="text-sm text-gray-600">
@@ -602,7 +614,7 @@ useEffect(() => {
                               <h4 className="font-semibold text-gray-900 mb-2">
                                 {option.transferName}
                               </h4>
-                              
+
                               {/* Departure Time Details */}
                               {option.departureTime && (
                                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
@@ -664,7 +676,9 @@ useEffect(() => {
                             {/* Book Now Button */}
                             <button
                               onClick={() => handleBookNow(option)}
-                              disabled={!optionAvailable || isCheckingAvailability}
+                              disabled={
+                                !optionAvailable || isCheckingAvailability
+                              }
                               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center gap-2"
                             >
                               {isCheckingAvailability ? (

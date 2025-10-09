@@ -14,28 +14,54 @@ export default function TicketsPage() {
   const router = useRouter();
 
   // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await fetchFromAPI("Tour/dubai/tours/public");
-        if (data?.result?.length) {
-          const grouped = data.result.reduce((acc, tour) => {
-            const type = tour.cityTourType || "Other Experiences";
-            if (!acc[type]) acc[type] = [];
-            acc[type].push(tour);
-            return acc;
-          }, {});
-          setGroupedTours(grouped);
-          setActiveCategory(Object.keys(grouped)[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching tours:", error);
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const data = await fetchFromAPI("Tour/dubai/tours/public");
+      if (data?.result?.length) {
+        // Group by category
+        const grouped = data.result.reduce((acc, tour) => {
+          const type = tour.cityTourType || "Other Experiences";
+          if (!acc[type]) acc[type] = [];
+          acc[type].push(tour);
+          return acc;
+        }, {});
+
+        // Sort all tours for Top Experiences
+        const topRated = [...data.result]
+          .sort((a, b) => {
+            // Recommended first
+            if (a.recommended && !b.recommended) return -1;
+            if (!a.recommended && b.recommended) return 1;
+            // If both same recommendation, sort by rating + reviewCount
+            const scoreA = a.rating * 100 + a.reviewCount; // weighting rating higher
+            const scoreB = b.rating * 100 + b.reviewCount;
+            return scoreB - scoreA;
+          })
+          .slice(0, 6); // top 6
+
+        // Optional: "Top Things to Do" next 6
+        const topThingsToDo = [...data.result].slice(6, 12);
+
+        // Combine sections
+        const finalData = {
+          "Top Experiences": topRated,
+          "Top Things to Do": topThingsToDo,
+          ...grouped,
+        };
+
+        setGroupedTours(finalData);
+        setActiveCategory(Object.keys(finalData)[0]);
       }
-    };
-    fetchData();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching tours:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, []);
+
 
   // Placeholder images
   const placeholderImages = [
@@ -79,25 +105,50 @@ export default function TicketsPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [activeCategory]);
 
+  // Section title formatter
+  const getSectionTitle = (category) => {
+    switch (category) {
+      case "Top Experiences":
+        return "Top experiences in Dubai";
+      case "Top Things to Do":
+        return "Top things to do in Dubai";
+      case "City Tours":
+        return "Landmarks in Dubai";
+      case "Water Parks":
+        return "Water Park Tickets in Dubai";
+      case "Cruises":
+        return "Cruises in Dubai";
+      case "Combos":
+        return "Combos Tickets in Dubai";
+      case "Desert Safari":
+        return "Desert Safari Tickets in Dubai";
+      default:
+        return `${category} in Dubai`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ===== Sticky Category Tabs ===== */}
       {!loading && (
         <div className="sticky top-[80px] z-30 bg-white shadow-sm border-b border-gray-200 overflow-x-auto no-scrollbar">
           <div className="flex space-x-4 px-4 py-3">
-            {Object.keys(groupedTours).map((category) => (
-              <button
-                key={category}
-                onClick={() => scrollToSection(category)}
-                className={`text-sm font-semibold whitespace-nowrap px-4 py-2 rounded-full transition-all duration-200 ${
-                  activeCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+{Object.keys(groupedTours)
+  .slice(2) // 👈 Skip first two categories
+  .map((category) => (
+    <button
+      key={category}
+      onClick={() => scrollToSection(category)}
+      className={`text-sm font-semibold whitespace-nowrap px-4 py-2 rounded-full transition-all duration-200 ${
+        activeCategory === category
+          ? "bg-blue-600 text-white"
+          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+      }`}
+    >
+      {category}
+    </button>
+  ))}
+
           </div>
         </div>
       )}
@@ -136,9 +187,7 @@ export default function TicketsPage() {
               {/* ===== Section Header ===== */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg md:text-xl font-bold text-gray-900">
-                  {category === "City Tours"
-                    ? "Top Experiences in Dubai"
-                    : category}
+                  {getSectionTitle(category)}
                 </h2>
                 <button className="text-blue-600 text-sm font-semibold hover:underline">
                   See all
@@ -146,7 +195,6 @@ export default function TicketsPage() {
               </div>
 
               {/* ===== Tours Cards ===== */}
-              {/* 👇 Desktop Grid + Mobile Horizontal Scroll */}
               <div className="flex md:grid gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-2">
                 {tours.map((tour, idx) => (
                   <motion.div

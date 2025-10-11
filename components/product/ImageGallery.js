@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { X } from "lucide-react";
 
 export default function ImageGallery({
   product,
@@ -10,139 +11,129 @@ export default function ImageGallery({
   prevImage,
   currentImage,
 }) {
-  // Total images
-  const total = product.tourImages?.length || 0;
+  const [showModal, setShowModal] = useState(false);
 
-  // Grid columns logic (desktop view)
-  let gridCols = "grid-cols-2";
-  if (total <= 5) {
-    gridCols = "grid-cols-2";
-  } else if (total <= 10) {
-    gridCols = "grid-cols-3";
-  } else {
-    gridCols = "grid-cols-4";
-  }
+  // Dummy placeholders (used by index if original image missing)
+  const placeholderImages = [
+    "https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?w=800",
+    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800",
+    "https://images.unsplash.com/photo-1532974297617-c0f05fe48bff?w=800",
+    "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=800",
+    "https://images.unsplash.com/photo-1576085898323-218337e3e43c?w=800",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800",
+  ];
 
+  // Use product images, fallback to dummy placeholders (indexed)
+  const images =
+    product?.tourImages?.length > 0
+      ? product.tourImages.map((img, i) => ({
+          // imagePath: img?.imagePath || placeholderImages[i % placeholderImages.length],
+          imagePath: placeholderImages[i % placeholderImages.length],
+        }))
+      : placeholderImages.map((url) => ({ imagePath: url }));
+
+  const videoUrl = product?.videoUrl;
+  const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/");
+
+  
   return (
     <div className="mb-10">
-      {/* Grid for larger screens */}
-      <div className="hidden md:grid grid-cols-3 gap-6">
-        {/* Left Large Image */}
-        <div className="col-span-2 relative h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
-          <Image
-            src={currentImage}
-            alt={product.tourName}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
+      {/* ---------- TOP INFO SECTION ---------- */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-semibold text-gray-500 uppercase">
+            {product?.category || product?.cityTourType || "Adventure"}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-yellow-600 font-semibold">
+            <span>⭐ {product?.rating || "0"}</span>
+            <span>({product?.reviewCount || "0"})</span>
+          </div>
+        </div>
+
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">
+          {product?.tourName || "Skydive Dubai at The Palm with Photos & Video"}
+        </h1>
+      </div>
+
+      {/* ---------- GALLERY SECTION ---------- */}
+      <div className="grid md:grid-cols-3 gap-3">
+        {/* LEFT SIDE - VIDEO OR MAIN IMAGE */}
+        <div className="relative col-span-2 h-[450px] rounded-2xl overflow-hidden shadow-lg group">
+          {videoUrl ? (
+            <iframe
+            src={embedUrl}
+            title="Tour Video"
+            className="w-full h-full"
+            allowFullScreen
           />
-
-          {/* Navigation Arrows */}
-          {total > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </>
-          )}
-
-          {/* Image Counter */}
-          {total > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-              {currentImageIndex + 1} / {total}
-            </div>
+          ) : (
+            <Image
+              src={images[0]?.imagePath}
+              alt={product?.tourName}
+              fill
+              className="object-cover"
+            />
           )}
         </div>
 
-        {/* Right Side Thumbnails in Grid */}
-        <div
-          className={`grid ${gridCols} gap-3 max-h-[500px] overflow-y-auto pr-2`}
-        >
-          {product.tourImages?.map((image, index) =>
-            index === currentImageIndex ? null : (
-              <button
+        {/* RIGHT SIDE - FIRST 4 IMAGES */}
+{/* RIGHT SIDE - FIRST 4 IMAGES */}
+<div className="relative h-[450px] md:grid md:grid-cols-2 md:grid-rows-2 md:gap-2 flex gap-2 overflow-x-auto md:overflow-x-visible">
+  {images.slice(0, 4).map((img, index) => (
+    <div
+      key={index}
+      className="relative rounded-xl overflow-hidden cursor-pointer flex-shrink-0 w-[180px] md:w-full h-[180px] md:h-full"
+      onClick={() => setShowModal(true)}
+    >
+      <Image
+        src={img.imagePath}
+        alt={`Thumbnail ${index + 1}`}
+        fill
+        className="object-cover hover:scale-105 transition-transform duration-300"
+      />
+    </div>
+  ))}
+
+  {/* View All Button */}
+  {images.length > 4 && (
+    <button
+      onClick={() => setShowModal(true)}
+      className="absolute top-2 right-2 bg-white/90 hover:bg-white text-sm font-semibold text-gray-800 px-3 py-1 rounded-md shadow-md"
+    >
+      View all images
+    </button>
+  )}
+</div>
+
+      </div>
+
+      {/* ---------- IMAGE MODAL ---------- */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center px-6 py-10">
+          <button
+            onClick={() => setShowModal(false)}
+            className="absolute top-5 right-5 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <div className="max-w-6xl w-full overflow-y-auto space-y-6 scrollbar-hide">
+            {images.map((img, index) => (
+              <div
                 key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`relative h-28 w-full rounded-xl overflow-hidden transition-all ${
-                  index === currentImageIndex
-                    ? "ring-2 ring-blue-500 ring-offset-2 transform scale-105"
-                    : "opacity-70 hover:opacity-100"
-                }`}
+                className="relative w-full h-[450px] rounded-xl overflow-hidden"
               >
                 <Image
-                  src={image.imagePath}
-                  alt={`${product.tourName} ${index + 1}`}
+                  src={img.imagePath}
+                  alt={`Image ${index + 1}`}
                   fill
                   className="object-cover"
                 />
-              </button>
-            )
-          )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Mobile Layout */}
-      <div className="md:hidden space-y-4">
-        {/* Large Image on top */}
-        <div className="relative h-72 rounded-2xl overflow-hidden shadow-xl group">
-          <Image
-            src={currentImage}
-            alt={product.tourName}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-
-          {/* Navigation Arrows */}
-          {total > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Thumbnails Scroll Slider */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {product.tourImages?.map((image, index) =>
-            index === currentImageIndex ? null : (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`relative flex-shrink-0 h-20 w-28 rounded-lg overflow-hidden transition-all ${
-                  index === currentImageIndex
-                    ? "ring-2 ring-blue-500 transform scale-105"
-                    : "opacity-70 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={image.imagePath}
-                  alt={`${product.tourName} ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              </button>
-            )
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

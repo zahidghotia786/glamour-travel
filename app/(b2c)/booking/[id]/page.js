@@ -19,6 +19,9 @@ import ProductInfo from "@/components/product/ProductInfo";
 import ImageGallery from "@/components/product/ImageGallery";
 import Tabs from "@/components/product/Tabs";
 import BookingCard from "@/components/product/BookingCard";
+import Reviews from "@/components/product/Reviews";
+import Highlights from "@/components/product/Highlights";
+import SimilarExperiences from "@/components/product/SimilarExperiences";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -54,7 +57,6 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [params.id, contractId]);
 
-
   useEffect(() => {
     if (product) {
       // remove old tour data
@@ -81,8 +83,6 @@ export default function ProductDetailPage() {
     }
   }, [product]);
 
-
-
   const shareProduct = async () => {
     if (navigator.share) {
       try {
@@ -99,8 +99,6 @@ export default function ProductDetailPage() {
       alert("Link copied to clipboard!");
     }
   };
-
-  
 
   const nextImage = () => {
     setCurrentImageIndex(
@@ -197,9 +195,9 @@ export default function ProductDetailPage() {
           </div>
         </motion.div>
 
-        <div className="pt-16"></div>
+        <div className="pt-6"></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
           {/* Product Header */}
           {/* Image Gallery */}
 
@@ -215,13 +213,18 @@ export default function ProductDetailPage() {
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Side - 8 cols */}
             <div className="lg:col-span-8">
-              <ProductInfo
-                product={product}
-                price={price}
-                renderStars={renderStars}
-              />
 
-              <Tabs product={product} renderStars={renderStars} />
+              {/* //reviews component */}
+
+              <Reviews product={product} />
+
+              {/* hieghlights section */}
+              <Highlights product={product} />
+
+
+              {/* similar products section */}
+              <SimilarExperiences />
+
             </div>
 
             {/* Right Side - 4 cols */}

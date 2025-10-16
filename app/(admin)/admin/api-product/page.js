@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import Loader from "@/components/common/Loader";
+import TourCard from "./TourCard";
+import toast from "react-hot-toast";
 
 export default function DubaiToursAdmin() {
   const [tours, setTours] = useState([]);
@@ -24,7 +26,7 @@ export default function DubaiToursAdmin() {
   const [error, setError] = useState(null);
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-
+console.log(tours[0])
   useEffect(() => {
     fetchDubaiTours();
   }, []);
@@ -32,31 +34,40 @@ export default function DubaiToursAdmin() {
   useEffect(() => {
     // Filter tours based on search term and filters
     let filtered = tours.filter((tour) => {
+      // Extract data from nested structure
+      const tourData = tour.rawJson || tour;
+      const tourName = tourData.tourName || "";
+      const tourShortDescription = tourData.tourShortDescription || "";
+      const cityTourType = tourData.cityTourType || "";
+      const isPrivate = tourData.isPrivate || false;
+      const recommended = tourData.recommended || false;
+
       const matchesSearch =
-        tour.tourName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tour.tourShortDescription
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        tour.cityTourType?.toLowerCase().includes(searchTerm.toLowerCase());
+        tourName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tourShortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cityTourType.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter =
         filterType === "all" ||
-        (filterType === "recommended" && tour.recommended) ||
-        (filterType === "private" && tour.isPrivate) ||
-        tour.cityTourType?.toLowerCase().includes(filterType.toLowerCase());
+        (filterType === "recommended" && recommended) ||
+        (filterType === "private" && isPrivate) ||
+        cityTourType.toLowerCase().includes(filterType.toLowerCase());
 
       return matchesSearch && matchesFilter;
     });
 
     // Sort filtered results
     filtered.sort((a, b) => {
+      const aData = a.rawJson || a;
+      const bData = b.rawJson || b;
+      
       switch (sortBy) {
         case "name":
-          return a.tourName?.localeCompare(b.tourName || "") || 0;
+          return (aData.tourName || "").localeCompare(bData.tourName || "");
         case "rating":
-          return (b.rating || 0) - (a.rating || 0);
+          return (bData.rating || 0) - (aData.rating || 0);
         case "duration":
-          return parseInt(a.duration || 0) - parseInt(b.duration || 0);
+          return parseInt(aData.duration || 0) - parseInt(bData.duration || 0);
         default:
           return 0;
       }
@@ -68,13 +79,13 @@ export default function DubaiToursAdmin() {
   const fetchDubaiTours = async () => {
     try {
       setLoading(true);
-      const data = await adminApi.getDubaiTours();
+      const res = await adminApi.getDubaiTours();
 
-      if (data.statuscode === 0) {
-        setTours(data.result || []);
+      if (res.success) {
+        setTours(res.data || []);
         setError(null);
       } else {
-        setError(data.error || "Failed to fetch tours");
+        setError(res.message || "Failed to fetch tours");
       }
     } catch (err) {
       setError(err.message || "An error occurred while fetching tours");
@@ -84,10 +95,14 @@ export default function DubaiToursAdmin() {
     }
   };
 
-
-  const handleApprove = async (tourId) => {
+const handleApprove = async (tourId, contractId, markupType, markupValue) => {
   try {
-    const res = await adminApi.approveTour(tourId);
+    const res = await adminApi.approveTour({
+      tourId, 
+      contractId,
+      markupType, 
+      markupValue
+    });
 
     if (res.success) {
       setTours((prev) =>
@@ -95,7 +110,8 @@ export default function DubaiToursAdmin() {
           t.tourId === tourId ? { ...t, approved: true } : t
         )
       );
-      window.location.reload();
+      toast.success("Tour approved successfully!");
+      fetchDubaiTours()
     } else {
       console.error("Approval failed:", res.message);
     }
@@ -104,87 +120,42 @@ export default function DubaiToursAdmin() {
   }
 };
 
-
-  const TourCard = ({ tour, index }) => (
-    <div
-      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-        <div className="absolute top-4 right-4 flex gap-2">
-          {tour.recommended && (
-            <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold animate-pulse">
-              Recommended
-            </span>
-          )}
-          {tour.isPrivate && (
-            <span className="bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              Private
-            </span>
-          )}
-        </div>
-        <div className="absolute bottom-4 left-4 text-white">
-          <h3 className="text-lg font-bold mb-1">{tour.tourName}</h3>
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin size={14} />
-            <span>
-              {tour.cityName}, {tour.countryName}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1">
-            <Star className="fill-yellow-400 text-yellow-400" size={16} />
-            <span className="font-semibold">{tour.rating}</span>
-            <span className="text-gray-500 text-sm">
-              ({tour.reviewCount} reviews)
-            </span>
-          </div>
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
-            {tour.cityTourType}
-          </span>
-        </div>
-
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-          {tour.tourShortDescription}
-        </p>
-
-<div className="flex items-center justify-between text-sm">
-  <div className="flex items-center gap-1 text-gray-500">
-    <Clock size={14} />
-    <span>{tour.duration}</span>
-  </div>
-
-  {!tour.isApproved ? (
-    <button
-      onClick={() => handleApprove(tour.tourId)}
-      className="bg-yellow-500 cursor-pointer text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all duration-200 transform hover:scale-105"
-    >
-      Mark Approve
-    </button>
-  ) : (
-    <button
-    onClick={() => handleApprove(tour.tourId)}
-      className="bg-green-600 text-white cursor-pointer px-4 py-2 rounded-lg"
-    >
-      Approved
-    </button>
-  )}
-</div>
-
-      </div>
-    </div>
-  );
+// Helper function to get tour data from nested structure
+const getTourData = (tour) => {
+  // Merge top-level tour properties with rawJson
+  return {
+    ...tour.rawJson,   // nested API response
+    ...tour,           // top-level properties (approvedByAdmin, priceByAdmin, etc.)
+  };
+};
 
 
+  // Calculate stats based on the nested data structure
+  const getStats = () => {
+    const totalTours = tours.length;
+    const recommendedCount = tours.filter(tour => 
+      getTourData(tour).recommended
+    ).length;
+    const privateCount = tours.filter(tour => 
+      getTourData(tour).isPrivate
+    ).length;
+    
+    const totalRating = tours.reduce((acc, tour) => {
+      const tourData = getTourData(tour);
+      return acc + (tourData.rating || 0);
+    }, 0);
+    
+    const avgRating = totalTours > 0 ? (totalRating / totalTours).toFixed(1) : "0.0";
+
+    return { totalTours, recommendedCount, privateCount, avgRating };
+  };
+
+  const stats = getStats();
 
   if (loading) {
     return <Loader />;
   }
+  
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex justify-center items-center">
@@ -241,7 +212,7 @@ export default function DubaiToursAdmin() {
               <div>
                 <p className="text-gray-500 text-sm">Total Tours</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tours.length}
+                  {stats.totalTours}
                 </p>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
@@ -254,7 +225,7 @@ export default function DubaiToursAdmin() {
               <div>
                 <p className="text-gray-500 text-sm">Recommended</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tours.filter((t) => t.recommended).length}
+                  {stats.recommendedCount}
                 </p>
               </div>
               <div className="bg-yellow-100 p-3 rounded-full">
@@ -267,7 +238,7 @@ export default function DubaiToursAdmin() {
               <div>
                 <p className="text-gray-500 text-sm">Private Tours</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tours.filter((t) => t.isPrivate).length}
+                  {stats.privateCount}
                 </p>
               </div>
               <div className="bg-purple-100 p-3 rounded-full">
@@ -280,12 +251,7 @@ export default function DubaiToursAdmin() {
               <div>
                 <p className="text-gray-500 text-sm">Avg Rating</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tours.length > 0
-                    ? (
-                        tours.reduce((acc, t) => acc + (t.rating || 0), 0) /
-                        tours.length
-                      ).toFixed(1)
-                    : "0.0"}
+                  {stats.avgRating}
                 </p>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
@@ -357,7 +323,8 @@ export default function DubaiToursAdmin() {
         {filteredTours.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
             {filteredTours.map((tour, index) => (
-              <TourCard key={tour.tourId || index} tour={tour} index={index} />
+              <TourCard key={tour.tourId || tour._id || index} tour={tour} fetchDubaiTours={fetchDubaiTours}
+               index={index} handleApprove={handleApprove} getTourData={getTourData} />
             ))}
           </div>
         ) : (

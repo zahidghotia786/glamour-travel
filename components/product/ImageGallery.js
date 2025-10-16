@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { X } from "lucide-react";
+import BookingCard from "./BookingCard";
 
 export default function ImageGallery({
   product,
@@ -10,6 +11,7 @@ export default function ImageGallery({
   nextImage,
   prevImage,
   currentImage,
+  price,
 }) {
   const [showModal, setShowModal] = useState(false);
 
@@ -35,7 +37,6 @@ export default function ImageGallery({
   const videoUrl = product?.videoUrl;
   const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/");
 
-  
   return (
     <div className="mb-10">
       {/* ---------- TOP INFO SECTION ---------- */}
@@ -50,9 +51,16 @@ export default function ImageGallery({
           </div>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">
-          {product?.tourName || "Skydive Dubai at The Palm with Photos & Video"}
-        </h1>
+        <div className="flex flex-col sm:flex-row items-start sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">
+            {product?.tourName ||
+              "Skydive Dubai at The Palm with Photos & Video"}
+          </h1>
+
+          <div className=" block lg:hidden lg:col-span-4">
+            <BookingCard price={price} />
+          </div>
+        </div>
       </div>
 
       {/* ---------- GALLERY SECTION ---------- */}
@@ -61,11 +69,11 @@ export default function ImageGallery({
         <div className="relative col-span-2 h-[450px] rounded-2xl overflow-hidden shadow-lg group">
           {videoUrl ? (
             <iframe
-            src={embedUrl}
-            title="Tour Video"
-            className="w-full h-full"
-            allowFullScreen
-          />
+              src={embedUrl}
+              title="Tour Video"
+              className="w-full h-full"
+              allowFullScreen
+            />
           ) : (
             <Image
               src={images[0]?.imagePath}
@@ -77,34 +85,32 @@ export default function ImageGallery({
         </div>
 
         {/* RIGHT SIDE - FIRST 4 IMAGES */}
-{/* RIGHT SIDE - FIRST 4 IMAGES */}
-<div className="relative h-[450px] md:grid md:grid-cols-2 md:grid-rows-2 md:gap-2 flex gap-2 overflow-x-auto md:overflow-x-visible">
-  {images.slice(0, 4).map((img, index) => (
-    <div
-      key={index}
-      className="relative rounded-xl overflow-hidden cursor-pointer flex-shrink-0 w-[180px] md:w-full h-[180px] md:h-full"
-      onClick={() => setShowModal(true)}
-    >
-      <Image
-        src={img.imagePath}
-        alt={`Thumbnail ${index + 1}`}
-        fill
-        className="object-cover hover:scale-105 transition-transform duration-300"
-      />
-    </div>
-  ))}
+        <div className="relative sm:h-[450px] md:grid md:grid-cols-2 md:grid-rows-2 md:gap-2 flex gap-2 overflow-x-auto md:overflow-x-visible">
+          {images.slice(0, 4).map((img, index) => (
+            <div
+              key={index}
+              className="relative rounded-xl overflow-hidden cursor-pointer flex-shrink-0 w-[180px] md:w-full h-[180px] md:h-full"
+              onClick={() => setShowModal(true)}
+            >
+              <Image
+                src={img.imagePath}
+                alt={`Thumbnail ${index + 1}`}
+                fill
+                className="object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          ))}
 
-  {/* View All Button */}
-  {images.length > 4 && (
-    <button
-      onClick={() => setShowModal(true)}
-      className="absolute top-2 right-2 bg-white/90 hover:bg-white text-sm font-semibold text-gray-800 px-3 py-1 rounded-md shadow-md"
-    >
-      View all images
-    </button>
-  )}
-</div>
-
+          {/* View All Button */}
+          {images.length > 4 && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="absolute top-2 right-2 bg-white/90 hover:bg-white text-sm font-semibold text-gray-800 px-3 py-1 rounded-md shadow-md"
+            >
+              View all images
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ---------- IMAGE MODAL ---------- */}

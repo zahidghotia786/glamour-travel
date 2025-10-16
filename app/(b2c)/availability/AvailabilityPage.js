@@ -20,8 +20,13 @@ import {
   Share,
   Zap,
   Crown,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import B2CPageLayout from "../B2CPageLayout";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import { Toaster } from "react-hot-toast";
 
 export default function AvailabilityPage({ searchParams }) {
   const [loading, setLoading] = useState(true);
@@ -31,7 +36,8 @@ export default function AvailabilityPage({ searchParams }) {
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
-  console.log(tourData);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // URL parameters
   const tourId = searchParams.get("tourId");
@@ -52,6 +58,92 @@ export default function AvailabilityPage({ searchParams }) {
       }
     }
   }, []);
+
+  // ✅ FIXED: Correct date formatting function
+  const formatDateForURL = (date) => {
+    if (!date) return "";
+
+    // Local time mein date ko format karenge
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // Calendar functions
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const days = [];
+    const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Add empty cells for days before the first day of month
+    for (let i = 0; i < startingDay; i++) {
+      days.push(null);
+    }
+
+    // Add all days of the month
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const navigateMonth = (direction) => {
+    setCurrentMonth((prev) => {
+      const newMonth = new Date(prev);
+      if (direction === "prev") {
+        newMonth.setMonth(prev.getMonth() - 1);
+      } else {
+        newMonth.setMonth(prev.getMonth() + 1);
+      }
+      return newMonth;
+    });
+  };
+
+  // ✅ FIXED: Correct date selection handler
+  const handleDateSelect = (date) => {
+    if (!date) return;
+
+    const formattedDate = formatDateForURL(date);
+    console.log("Selected Date:", date);
+    console.log("Formatted Date for URL:", formattedDate);
+
+    setShowCalendarModal(false);
+
+    // Navigate to the selected date
+    window.location.href = `/availability?tourId=${tourId}&date=${formattedDate}&contractId=${contractId}`;
+  };
+
+  // ✅ FIXED: Correct date comparison for selection
+  const isDateSelected = (date) => {
+    if (!date || !travelDate) return false;
+
+    const dateToCheck = formatDateForURL(date);
+    return dateToCheck === travelDate;
+  };
+
+  const isDateToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    return formatDateForURL(date) === formatDateForURL(today);
+  };
+
+  const isDatePast = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    return checkDate < today;
+  };
 
   // Extract unique time slots from all options
   const extractTimeSlots = (options) => {
@@ -85,7 +177,7 @@ export default function AvailabilityPage({ searchParams }) {
       setAvailableTimeSlots([]);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tour/dubai/tour-options`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/tourtickets/dubai/tour-options`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,7 +193,6 @@ export default function AvailabilityPage({ searchParams }) {
       );
 
       const data = await response.json();
-      console.log("✅ Tour Options API Response:", data);
 
       if (data.statuscode === 0 && data.result?.length > 0) {
         const timeSlots = extractTimeSlots(data.result);
@@ -143,7 +234,7 @@ export default function AvailabilityPage({ searchParams }) {
       setAvailabilityLoading((prev) => ({ ...prev, [optionKey]: true }));
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tour/dubai/availability`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/tourtickets/dubai/availability`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -309,6 +400,115 @@ export default function AvailabilityPage({ searchParams }) {
     }
   }, [tourId, travelDate, contractId]);
 
+  // Calendar Modal Component
+  const CalendarModal = () => {
+    if (!showCalendarModal) return null;
+
+    const days = getDaysInMonth(currentMonth);
+    const monthName = currentMonth.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-900">Select Date</h3>
+            <button
+              onClick={() => setShowCalendarModal(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Calendar Navigation */}
+          <div className="flex items-center justify-between p-4">
+            <button
+              onClick={() => navigateMonth("prev")}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+
+            <h4 className="text-lg font-semibold text-gray-900">{monthName}</h4>
+
+            <button
+              onClick={() => navigateMonth("next")}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="p-4">
+            {/* Week Days Header */}
+            <div className="grid grid-cols-7 gap-1 mb-3">
+              {weekDays.map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-sm font-medium text-gray-500 py-2"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((date, index) => {
+                const isDisabled = date && isDatePast(date);
+                const isSelected = date && isDateSelected(date);
+                const isToday = date && isDateToday(date);
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => !isDisabled && handleDateSelect(date)}
+                    disabled={isDisabled}
+                    className={`
+                      h-12 rounded-lg text-sm font-medium transition-all duration-200
+                      ${!date ? "invisible" : ""}
+                      ${
+                        isDisabled
+                          ? "text-gray-300 cursor-not-allowed"
+                          : isSelected
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : isToday
+                          ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }
+                    `}
+                  >
+                    {date ? date.getDate() : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex space-x-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                <span className="text-sm text-gray-600">Selected</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-blue-100"></div>
+                <span className="text-sm text-gray-600">Today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Loading State with beautiful animation
   if (loading) {
     return (
@@ -361,7 +561,10 @@ export default function AvailabilityPage({ searchParams }) {
                 We couldn't find any magical experiences for your selected date.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                <button
+                  onClick={() => setShowCalendarModal(true)}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
                   <Calendar className="w-5 h-5 inline mr-2" />
                   Try Different Date
                 </button>
@@ -373,350 +576,147 @@ export default function AvailabilityPage({ searchParams }) {
             </div>
           </div>
         </div>
+        <CalendarModal />
       </B2CPageLayout>
     );
   }
 
   return (
-    <B2CPageLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Stunning Header Section */}
-          <div className="mb-12">
-            {/* Breadcrumb */}
-            <div className="flex items-center text-sm text-gray-500 mb-6">
-              <span className="hover:text-blue-600 cursor-pointer transition-colors">
-                Tours
-              </span>
-              <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />
-              <span className="hover:text-blue-600 cursor-pointer transition-colors">
-                {selectedTour?.cityName || "City"}
-              </span>
-              <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />
-              <span className="text-gray-900 font-medium">
-                {selectedTour?.tourName || "Tour"}
-              </span>
-            </div>
+    <>
+      <Header />
+      <main className="sm:min-h-screen">
+        <Toaster position="top-right" reverseOrder={false} />
 
-            {/* Hero Card */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 p-8 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 transform translate-x-32 -translate-y-32">
-                  <div className="w-full h-full rounded-full bg-white/10 animate-pulse"></div>
-                </div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 transform -translate-x-24 translate-y-24">
-                  <div className="w-full h-full rounded-full bg-white/5"></div>
-                </div>
+        <div className="container max-w-[90%] sm:max-w-[600px] md:max-w-[750px] lg:max-w-[850px] mx-auto mt-10 sm:mt-16">
+          {/* 📅 DATE SELECTOR SECTION */}
+          <div className="mb-8">
+            <h2 className="text-base sm:text-lg font-semibold mb-1 text-gray-900">
+              Select a date
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              All prices are in AED (AED)
+            </p>
 
-                <div className="relative z-10">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="flex-1">
-                      <h1 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight">
-                        {selectedTour?.tourName || tourData.tourName}
-                      </h1>
+            <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-hide">
+              {Array.from({ length: 7 }).map((_, idx) => {
+                const date = new Date();
+                date.setDate(date.getDate() + idx);
 
-                      <div className="flex flex-wrap items-center gap-6 text-blue-100 mb-6">
-                        {selectedTour?.rating && (
-                          <div className="flex items-center bg-white/20 rounded-full px-3 py-1 backdrop-blur-sm">
-                            <Star className="w-4 h-4 text-yellow-400 mr-1 fill-current" />
-                            <span className="font-semibold text-white">
-                              {selectedTour.rating}
-                            </span>
-                            {selectedTour.reviewCount && (
-                              <span className="ml-1 text-blue-100">
-                                ({selectedTour.reviewCount})
-                              </span>
-                            )}
-                          </div>
-                        )}
+                const day = date
+                  .toLocaleDateString("en-US", { weekday: "short" })
+                  .toUpperCase();
+                const displayDate = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+                const formattedDate = formatDateForURL(date);
+                const isSelected = formattedDate === travelDate;
 
-                        {selectedTour?.duration && (
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2" />
-                            <span>{selectedTour.duration}</span>
-                          </div>
-                        )}
-
-                        {selectedTour?.cityTourType && (
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            <span>{selectedTour.cityTourType}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-4 text-blue-100">
-                        <div className="flex items-center bg-white/20 rounded-full px-4 py-2 backdrop-blur-sm">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          <span className="font-medium text-white">
-                            {formatDate(travelDate)}
-                          </span>
-                        </div>
-                        <div className="flex items-center bg-white/20 rounded-full px-4 py-2 backdrop-blur-sm">
-                          <Users className="w-4 h-4 mr-2" />
-                          <span className="text-white">
-                            {participants.adult +
-                              participants.child +
-                              participants.infant}{" "}
-                            Traveler(s)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      {selectedTour?.cancellationPolicyName && (
-                        <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-4 backdrop-blur-sm">
-                          <div className="flex items-center text-green-100">
-                            <CheckCircle className="w-5 h-5 mr-2" />
-                            <span className="font-medium text-white">
-                              {selectedTour.cancellationPolicyName}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <button className="p-3 bg-white/20 rounded-xl backdrop-blur-sm hover:bg-white/30 transition-all">
-                          <Heart className="w-5 h-5 text-white" />
-                        </button>
-                        <button className="p-3 bg-white/20 rounded-xl backdrop-blur-sm hover:bg-white/30 transition-all">
-                          <Share className="w-5 h-5 text-white" />
-                        </button>
-                      </div>
-                    </div>
+                return (
+                  <div
+                    key={idx}
+                    onClick={() =>
+                      (window.location.href = `/availability?tourId=${tourId}&date=${formattedDate}&contractId=${contractId}`)
+                    }
+                    className={`flex flex-col items-center justify-center min-w-[70px] sm:min-w-[75px] px-3 py-2 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                      isSelected
+                        ? "border-blue-600 text-blue-600 bg-blue-50 font-semibold"
+                        : "border-gray-200 hover:border-blue-400 hover:bg-blue-50"
+                    }`}
+                  >
+                    <span className="text-[11px] sm:text-xs">{day}</span>
+                    <span className="text-sm">{displayDate}</span>
                   </div>
-                </div>
-              </div>
+                );
+              })}
+
+              {/* More dates button */}
+              <button
+                onClick={() => setShowCalendarModal(true)}
+                className="flex flex-col items-center justify-center min-w-[70px] sm:min-w-[75px] text-gray-500 hover:text-blue-600 transition"
+              >
+                <Calendar className="w-5 h-5 mb-1" />
+                <span className="text-[11px] sm:text-xs font-medium">
+                  More dates
+                </span>
+              </button>
             </div>
           </div>
 
-          {/* Time Slot Selection */}
-          {availableTimeSlots.length > 0 && (
-            <div className="mb-8">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Select Your Preferred Time
-                    </h3>
-                    <p className="text-gray-600">
-                      Choose a time slot to see available options
-                    </p>
-                  </div>
+          {/* 🕒 TIME PICKER SECTION */}
+          <div className="mb-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 text-gray-900">
+              Pick a time
+            </h3>
+            <div className="relative w-full sm:max-w-xs">
+              <select
+                value={selectedTimeSlot ? selectedTimeSlot.time : ""}
+                onChange={(e) => {
+                  const selected = availableTimeSlots.find(
+                    (slot) => slot.time === e.target.value
+                  );
+                  if (selected) handleTimeSlotSelect(selected);
+                }}
+                className="w-full appearance-none bg-white border border-gray-300 rounded-lg py-3 pl-4 pr-10 text-gray-900 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                {availableTimeSlots.map((slot) => (
+                  <option key={slot.time} value={slot.time}>
+                    {slot.formattedTime}
+                  </option>
+                ))}
+              </select>
+              <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            </div>
+          </div>
 
-                  <div className="relative">
-                    <select
-                      value={selectedTimeSlot ? selectedTimeSlot.time : ""}
-                      onChange={(e) => {
-                        const selected = availableTimeSlots.find(
-                          (slot) => slot.time === e.target.value
-                        );
-                        if (selected) handleTimeSlotSelect(selected);
-                      }}
-                      className="appearance-none bg-white border-2 border-gray-200 rounded-xl py-3 px-6 pr-12 text-lg font-semibold text-gray-900 focus:outline-none focus:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-md"
-                    >
-                      {availableTimeSlots.map((slot, index) => (
-                        <option key={slot.time} value={slot.time}>
-                          {slot.formattedTime}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4">
-                      <Clock className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
+          {/* 📝 SUMMARY SECTION */}
+          {selectedTimeSlot && (
+            <div className="border-t border-gray-200 pt-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h4 className="text-sm text-gray-800 font-medium">
+                    {selectedTour?.tourName || "Tour Experience"}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {new Date(travelDate).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "2-digit",
+                    })}{" "}
+                    • {selectedTimeSlot.formattedTime}
+                  </p>
                 </div>
+                <button
+                  onClick={() => {
+                    // Get current time slot's available options
+                    const options = selectedTimeSlot?.availableOptions || [];
 
-                {/* Time Slot Options Summary */}
-                {selectedTimeSlot && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-blue-800">
-                      <span className="font-semibold">
-                        Available for {selectedTimeSlot.formattedTime}:
-                      </span>
-                      <span className="bg-blue-100 px-3 py-1 rounded-full font-medium">
-                        {currentOptions.length} options available
-                      </span>
-                    </div>
-                  </div>
-                )}
+                    if (options.length === 0) {
+                      alert(
+                        "No option found for this time slot. Please select another."
+                      );
+                      return;
+                    }
+
+                    // Pick first option (or you could let user select one)
+                    const selectedOption = options[0];
+
+                    // Call handleBookNow with selected option
+                    handleBookNow(selectedOption);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-2 px-5 sm:px-6 text-sm sm:text-base transition-all duration-200"
+                >
+                  Next
+                </button>
               </div>
             </div>
           )}
-
-          {/* Options Selection - Unified List */}
-          <div className="space-y-8">
-            {selectedTimeSlot ? (
-              <>
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
-                    Available Options for {selectedTimeSlot.formattedTime}
-                  </h2>
-                  <p className="text-lg text-gray-600">
-                    Select the option that matches your style and preferences
-                  </p>
-                </div>
-
-                {/* Single unified grid for all options */}
-                <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                    <h3 className="text-2xl font-bold mb-2">
-                      Choose Your Experience
-                    </h3>
-                    <p className="text-blue-100">
-                      All available options for your selected time
-                    </p>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {currentOptions.map((option) => {
-                        const optionKey = option.tourOptionId;
-                        const isCheckingAvailability =
-                          availabilityLoading[optionKey];
-                        const optionAvailability = availability[optionKey];
-                        const optionAvailable = optionAvailability
-                          ? isOptionAvailable(optionAvailability)
-                          : null;
-                        const styling = getTransferStyling(option.transferName);
-
-                        return (
-                          <div
-                            key={option.tourOptionId}
-                            className="relative border-2 rounded-2xl p-6 transition-all hover:scale-105 transform border-gray-200 bg-white hover:border-gray-300 hover:shadow-lg"
-                          >
-                            {/* Transfer type badge */}
-                            <div className="absolute top-3 right-3">
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-bold ${styling.badgeGradient}`}
-                              >
-                                {styling.badge}
-                              </span>
-                            </div>
-
-                            {/* Price Section */}
-                            <div className="mb-4">
-                              <div className="text-2xl font-bold text-gray-900">
-                                ${option.adultPrice}
-                                <span className="text-sm text-gray-500 font-normal">
-                                  /adult
-                                </span>
-                              </div>
-                              {option.childPrice > 0 && (
-                                <div className="text-sm text-gray-600">
-                                  Child: ${option.childPrice}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Transfer Details */}
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-900 mb-2">
-                                {option.transferName}
-                              </h4>
-
-                              {/* Departure Time Details */}
-                              {option.departureTime && (
-                                <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                                  <div className="text-xs font-semibold text-gray-700 mb-1 flex items-center">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    Schedule Details
-                                  </div>
-                                  <div className="text-xs text-gray-600 whitespace-pre-line">
-                                    {option.departureTime}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Key Details */}
-                              <div className="space-y-1 mb-4">
-                                <div className="text-sm text-gray-600 flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  Min {option.minimumPax} guests
-                                </div>
-                                <div className="text-sm text-gray-600 flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  Starts: {formatTime(option.startTime)}
-                                </div>
-                                <div className="text-sm text-gray-600 flex items-center gap-1">
-                                  <Timer className="w-4 h-4" />
-                                  Booking cutoff: {option.cutOff} hours
-                                </div>
-                              </div>
-
-                              {/* Same day booking indicator */}
-                              {!option.allowTodaysBooking && (
-                                <div className="mb-4 text-xs text-amber-600 flex items-center gap-1">
-                                  <Info className="w-3 h-3" />
-                                  Advance booking required
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Availability Status */}
-                            <div className="mb-4">
-                              {isCheckingAvailability ? (
-                                <div className="flex items-center text-blue-600">
-                                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                  Checking availability...
-                                </div>
-                              ) : optionAvailable === true ? (
-                                <div className="flex items-center text-green-600 font-semibold">
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Available
-                                </div>
-                              ) : optionAvailable === false ? (
-                                <div className="flex items-center text-red-600 font-semibold">
-                                  <X className="w-4 h-4 mr-2" />
-                                  Sold Out
-                                </div>
-                              ) : null}
-                            </div>
-
-                            {/* Book Now Button */}
-                            <button
-                              onClick={() => handleBookNow(option)}
-                              disabled={
-                                !optionAvailable || isCheckingAvailability
-                              }
-                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center gap-2"
-                            >
-                              {isCheckingAvailability ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  Checking...
-                                </>
-                              ) : optionAvailable === false ? (
-                                <>
-                                  <X className="w-4 h-4" />
-                                  Sold Out
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="w-4 h-4" />
-                                  Book Now
-                                  <ArrowRight className="w-4 h-4" />
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-600">
-                  Please select a time slot to see available options
-                </h3>
-              </div>
-            )}
-          </div>
         </div>
-      </div>
-    </B2CPageLayout>
+
+        {/* Calendar Modal */}
+        <CalendarModal />
+      </main>
+      <Footer />
+    </>
   );
 }

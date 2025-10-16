@@ -15,9 +15,7 @@ import {
 import { productsApi } from "@/lib/api";
 import Loader from "@/components/common/Loader";
 import B2CPageLayout from "../../B2CPageLayout";
-import ProductInfo from "@/components/product/ProductInfo";
 import ImageGallery from "@/components/product/ImageGallery";
-import Tabs from "@/components/product/Tabs";
 import BookingCard from "@/components/product/BookingCard";
 import Reviews from "@/components/product/Reviews";
 import Highlights from "@/components/product/Highlights";
@@ -27,6 +25,9 @@ export default function ProductDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const contractId = searchParams.get("contractId");
+  const cityId = searchParams.get("cityId");
+  const countryId = searchParams.get("countryId");
+
   const router = useRouter();
   const [product, setProduct] = useState(null);
   const [price, setPrice] = useState(0);
@@ -41,10 +42,13 @@ export default function ProductDetailPage() {
       try {
         setLoading(true);
         // In a real app, you would fetch from your API
-        const productData = await productsApi.getProductById(
-          params.id,
-          contractId
-        );
+      const productData = await productsApi.getProductById(
+        params.id,
+        contractId,
+        cityId,
+        countryId
+      );
+      console.log("Fetched product data:", productData);
         setProduct(productData.result.result[0]);
         setPrice(productData.result.price || 0);
       } catch (error) {
@@ -55,7 +59,8 @@ export default function ProductDetailPage() {
     };
 
     fetchProduct();
-  }, [params.id, contractId]);
+}, [params.id, contractId, cityId, countryId]);
+
 
   useEffect(() => {
     if (product) {
@@ -208,12 +213,12 @@ export default function ProductDetailPage() {
             nextImage={nextImage}
             prevImage={prevImage}
             currentImage={currentImage}
+            price={price}
           />
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Side - 8 cols */}
             <div className="lg:col-span-8">
-
               {/* //reviews component */}
 
               <Reviews product={product} />
@@ -221,57 +226,15 @@ export default function ProductDetailPage() {
               {/* hieghlights section */}
               <Highlights product={product} />
 
-
               {/* similar products section */}
               <SimilarExperiences />
-
             </div>
 
             {/* Right Side - 4 cols */}
-            <div className="lg:col-span-4">
-              <BookingCard price={price} />
+            <div className=" hidden lg:block lg:col-span-4">
+              <BookingCard price={price} product={product} />
             </div>
           </div>
-
-          {/* Trust & Safety Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {[
-              {
-                icon: Shield,
-                title: "Safety First",
-                desc: "COVID-19 safety measures",
-                color: "text-green-500",
-              },
-              {
-                icon: CreditCard,
-                title: "Secure Booking",
-                desc: "SSL encrypted payments",
-                color: "text-blue-500",
-              },
-              {
-                icon: Phone,
-                title: "24/7 Support",
-                desc: "Always here to help",
-                color: "text-purple-500",
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="bg-white/80 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-white/20 text-center hover:shadow-xl transition-shadow"
-              >
-                <item.icon className={`w-12 h-12 ${item.color} mx-auto mb-4`} />
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  {item.title}
-                </h4>
-                <p className="text-gray-600 text-sm">{item.desc}</p>
-              </div>
-            ))}
-          </motion.div>
         </div>
       </div>
     </B2CPageLayout>

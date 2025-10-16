@@ -8,14 +8,18 @@ export const metadata = {
     "Book theme park tickets, tours, and attractions across the UAE with Glamour Adventures Tours. Easy booking, instant confirmation, multilingual support, and secure payments.",
 };
 
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}
-        <Toaster position="top-right" reverseOrder={false}   toastOptions={{
-    duration: 3000, 
-  }} />
+      <body>
+        {children}
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          toastOptions={{
+            duration: 3000,
+          }}
+        />
       </body>
     </html>
   );

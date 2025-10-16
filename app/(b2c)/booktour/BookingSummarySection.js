@@ -69,7 +69,7 @@ const BookingSummarySection = ({ formData, urlParams, calculateTotal, onSubmit, 
               Processing...
             </>
           ) : (
-            `Pay $${calculateTotal().toFixed(2)}`
+            `Pay AED ${calculateTotal().toFixed(2)}`
           )}
         </button>
       </div>

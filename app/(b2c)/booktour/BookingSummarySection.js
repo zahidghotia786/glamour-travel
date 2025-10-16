@@ -21,7 +21,7 @@ const BookingSummarySection = ({ formData, urlParams, calculateTotal, onSubmit, 
         <div className="flex justify-between py-1 border-b border-gray-100">
           <span className="text-sm text-gray-600">Price per person</span>
           <span className="text-sm font-semibold">
-            ${parseFloat(urlParams.adultprice || 0).toFixed(2)}
+            AED {parseFloat(urlParams.adultprice || 0).toFixed(2)}
           </span>
         </div>
 
@@ -35,7 +35,7 @@ const BookingSummarySection = ({ formData, urlParams, calculateTotal, onSubmit, 
         <div className="flex justify-between items-center">
           <span className="text-base font-bold text-gray-800">Total Amount</span>
           <span className="text-lg font-bold text-blue-600">
-            ${calculateTotal().toFixed(2)}
+            AED {calculateTotal().toFixed(2)}
           </span>
         </div>
       </div>

@@ -414,7 +414,7 @@ export default function TourBookingPage() {
           disabled={loading}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
-          {loading ? "Processing..." : `Book Now - $${calculateTotal().toFixed(2)}`}
+          {loading ? "Processing..." : `Book Now - AED ${calculateTotal().toFixed(2)}`}
         </button>
       </div>
     </form>

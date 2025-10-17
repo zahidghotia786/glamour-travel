@@ -163,7 +163,7 @@ const DashboardHeader = ({ setSidebarOpen, user }) => {
               >
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-bold text-white drop-shadow">
-                    {user?.name}
+                    {user?.firstName} {user?.lastName}
                   </p>
                   <div className="flex items-center justify-end space-x-1">
                     <Crown className="h-3 w-3 text-yellow-300" />
@@ -175,7 +175,7 @@ const DashboardHeader = ({ setSidebarOpen, user }) => {
                 <div className="relative">
                   <div className="h-12 w-12 bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg ring-4 ring-white/30 group-hover:ring-white/50 transition-all duration-300">
                     <span className="text-sm font-bold text-white drop-shadow">
-                      {user ? getInitials(user?.name) : "U"}
+                      {user ? getInitials(user?.firstName) : "U"}
                     </span>
                   </div>
                   <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-gradient-to-br from-green-400 to-green-500 border-3 border-white rounded-full shadow-md"></div>
@@ -190,12 +190,12 @@ const DashboardHeader = ({ setSidebarOpen, user }) => {
                     <div className="flex items-center space-x-4">
                       <div className="h-16 w-16 bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
                         <span className="text-xl font-bold text-white">
-                          {user ? getInitials(user?.name) : "U"}
+                          {user ? getInitials(user?.firstName) : "U"}
                         </span>
                       </div>
                       <div>
                         <p className="font-bold text-white text-lg">
-                          {user?.name || "User"}
+                          {user?.firstName + " " + user?.lastName|| "User"}
                         </p>
                         <p className="text-white/80 text-sm">
                           {user?.email || ""}

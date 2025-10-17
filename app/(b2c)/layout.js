@@ -7,7 +7,10 @@ export default function B2CLayout({ children }) {
       <body>
         <main className="min-h-screen">
           {children}
-          <Toaster position="top-right" reverseOrder={false} />
+          <Toaster position="top-right" reverseOrder={false}             
+          toastOptions={{
+              duration: 4000, // ⏱ Auto close after 4 seconds
+            }}/>
         </main>
       </body>
     </html>

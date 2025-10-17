@@ -208,7 +208,7 @@ export default function Header() {
                     {user.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div className="text-left hidden xl:block">
-                    <p className="text-sm font-semibold">{user.name}</p>
+                    <p className="text-sm font-semibold">{user.firstName} {user.lastName}</p>
                     <p className={`text-xs ${scrolled ? 'text-white/70' : 'text-white/70'}`}>
                       {user.role}
                     </p>

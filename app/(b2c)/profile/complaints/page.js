@@ -107,10 +107,19 @@ const ComplaintDetailModal = React.memo(({
     
     setSending(true);
     try {
-      await onSendMessage(complaint.id, message);
+      // Use complaint._id instead of complaint.id for MongoDB
+      await onSendMessage(complaint._id, message);
       setMessage('');
     } finally {
       setSending(false);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -140,7 +149,7 @@ const ComplaintDetailModal = React.memo(({
 
         <div className="p-6 space-y-6">
           {/* Complaint Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
@@ -166,18 +175,18 @@ const ComplaintDetailModal = React.memo(({
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 flex flex-wrap gap-10">
               {/* Booking Information */}
-              {complaint.booking && (
+              {complaint.bookingId && (
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center space-x-2">
                     <CreditCard className="h-4 w-4" />
                     <span>Related Booking</span>
                   </h3>
                   <div className="space-y-1 text-sm">
-                    <p><span className="font-medium">Reference:</span> {complaint.booking.reference}</p>
-                    <p><span className="font-medium">Amount:</span> {complaint.booking.totalGross} {complaint.booking.currency}</p>
-                    <p><span className="font-medium">Status:</span> {complaint.booking.status}</p>
+                    <p><span className="font-medium">Reference:</span> {complaint.bookingId.reference}</p>
+                    <p><span className="font-medium">Amount:</span> {complaint.bookingId.totalGross} {complaint.bookingId.currency}</p>
+                    <p><span className="font-medium">Status:</span> {complaint.bookingId.status}</p>
                     {complaint.tourName && (
                       <p><span className="font-medium">Tour:</span> {complaint.tourName}</p>
                     )}
@@ -217,8 +226,8 @@ const ComplaintDetailModal = React.memo(({
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Conversation</h3>
             
             <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-              {complaint.messages?.map((message) => (
-                <div key={message.id} className={`flex ${message.senderType === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {complaint.messages?.map((message, index) => (
+                <div key={message._id || index} className={`flex ${message.senderType === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                     message.senderType === 'user' 
                       ? 'bg-blue-600 text-white' 
@@ -244,7 +253,7 @@ const ComplaintDetailModal = React.memo(({
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your message..."
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={handleKeyPress}
                 />
                 <button
                   onClick={handleSendMessage}
@@ -275,7 +284,8 @@ const ComplaintDetailModal = React.memo(({
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
-                    onClick={() => onRateComplaint(complaint.id, star)}
+                    // Use complaint._id instead of complaint.id
+                    onClick={() => onRateComplaint(complaint._id, star)}
                     className="text-2xl hover:scale-110 transition-transform"
                   >
                     ⭐
@@ -787,7 +797,7 @@ const ComplaintsPage = () => {
   const ComplaintCard = ({ complaint }) => (
     <div 
       className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all cursor-pointer"
-      onClick={() => handleViewComplaint(complaint.id)}
+      onClick={() => handleViewComplaint(complaint._id)}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">

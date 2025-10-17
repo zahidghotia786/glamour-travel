@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Download,
   Eye,
-  Mail,
   Phone,
   Trash2,
 } from "lucide-react";
@@ -36,10 +35,11 @@ const MyBookingsPage = () => {
   const loadBookings = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await getUserBookings();
       setBookings(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to load bookings");
     } finally {
       setLoading(false);
     }
@@ -53,52 +53,55 @@ const MyBookingsPage = () => {
   };
 
   // Confirm cancellation
-const handleConfirmCancel = async () => {
-  if (!bookingToCancel || !cancellationReason.trim()) {
-    alert("Please provide a cancellation reason");
-    return;
-  }
-
-  try {
-    setCancelling(true);
-    
-    // Prepare cancellation data
-    const cancellationData = {
-      bookingId: bookingToCancel.apiResponse?.result?.details?.[0]?.bookingId,
-      referenceNo: bookingToCancel.reference,
-      cancellationReason: cancellationReason.trim()
-    };
-
-    // Call cancellation API
-    const result = await cancelBooking(cancellationData);
-
-    if (result.statuscode === 200) {
-      // Success - update local state to reflect cancelled status
-      setBookings(prev => prev.map(booking => 
-        booking.id === bookingToCancel.id 
-          ? { ...booking, status: 'CANCELLED' }
-          : booking
-      ));
-      
-      // Show success message
-      alert("Booking cancelled successfully!");
-      
-      // Close modal
-      setShowCancelConfirm(false);
-      setBookingToCancel(null);
-      setCancellationReason("");
-    } else {
-      throw new Error(result.error || "Failed to cancel booking");
+  const handleConfirmCancel = async () => {
+    if (!bookingToCancel || !cancellationReason.trim()) {
+      alert("Please provide a cancellation reason");
+      return;
     }
-  } catch (error) {
-    console.error("Cancellation error:", error);
-    alert(`Cancellation failed: ${error.message}`);
-  } finally {
-    setCancelling(false);
-  }
-};
 
+    try {
+      setCancelling(true);
+      
+      // Prepare cancellation data - use correct booking ID fields
+      const cancellationData = {
+        bookingId: bookingToCancel._id, // Use MongoDB _id
+        referenceNo: bookingToCancel.reference,
+        cancellationReason: cancellationReason.trim()
+      };
 
+      // Call cancellation API
+      const result = await cancelBooking(cancellationData);
+
+      if (result.success) {
+        // Success - update local state to reflect cancelled status
+        setBookings(prev => prev.map(booking => 
+          booking._id === bookingToCancel._id 
+            ? { 
+                ...booking, 
+                status: 'CANCELLED',
+                paymentStatus: 'CANCELLED',
+                updatedAt: new Date().toISOString()
+              }
+            : booking
+        ));
+        
+        // Show success message
+        alert("Booking cancelled successfully!");
+        
+        // Close modal
+        setShowCancelConfirm(false);
+        setBookingToCancel(null);
+        setCancellationReason("");
+      } else {
+        throw new Error(result.error || "Failed to cancel booking");
+      }
+    } catch (error) {
+      console.error("Cancellation error:", error);
+      alert(`Cancellation failed: ${error.message}`);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // Cancel the cancellation process
   const handleCancelCancellation = () => {
@@ -157,15 +160,20 @@ const handleConfirmCancel = async () => {
     });
   };
 
-  const getTourType = (apiResponse) => {
-    if (!apiResponse) return "Tour Booking";
-
-    if (apiResponse.error?.includes("6 Emirates")) {
+  const getTourType = (booking) => {
+    // Use tourDetails from booking data
+    if (booking.tourDetails && booking.tourDetails.length > 0) {
+      const tour = booking.tourDetails[0];
+      return `Tour #${tour.tourId}`; // Customize this based on your tour data
+    }
+    
+    // Fallback to API response if available
+    if (booking.apiResponse?.error?.includes("6 Emirates")) {
       return "6 Emirates in a Day Tour with Lunch";
     }
 
-    if (apiResponse.result?.details?.[0]?.servicetype) {
-      return apiResponse.result.details[0].servicetype;
+    if (booking.apiResponse?.result?.details?.[0]?.servicetype) {
+      return booking.apiResponse.result.details[0].servicetype;
     }
 
     return "Tour Booking";
@@ -174,9 +182,11 @@ const handleConfirmCancel = async () => {
   // Check if booking can be cancelled
   const canCancelBooking = (booking) => {
     const status = booking.status?.toLowerCase();
-    return (status === "confirmed" || status === "pending" || status === "success") ||
-           booking.paymentStatus === "PAID" &&
-           booking.apiResponse?.result?.details?.[0]?.bookingId;
+    const paymentStatus = booking.paymentStatus?.toLowerCase();
+    
+    return (status === "confirmed" || status === "pending" || status === "success") &&
+           paymentStatus !== "cancelled" && 
+           paymentStatus !== "failed";
   };
 
   const filteredBookings = bookings.filter((booking) => {
@@ -215,9 +225,10 @@ const handleConfirmCancel = async () => {
   ];
 
   const handleDownloadTicket = async (booking) => {
+    // Implement download functionality based on your API
     if (booking.apiResponse?.result?.details?.[0]?.downloadRequired) {
-      // Implement download functionality
       console.log("Download ticket for:", booking.reference);
+      // Add your download logic here
     } else {
       alert("Ticket download not available for this booking");
     }
@@ -228,6 +239,7 @@ const handleConfirmCancel = async () => {
       booking.status
     }\nIssue: ${booking.apiResponse?.error || "Need assistance"}`;
     console.log("Contact support:", message);
+    // Implement contact support logic
   };
 
   if (loading) {
@@ -323,27 +335,22 @@ const handleConfirmCancel = async () => {
             ) : (
               filteredBookings.map((booking) => (
                 <div
-                  key={booking.id}
+                  key={booking._id} // Use _id instead of id
                   className="bg-gray-50 rounded-xl p-6 border border-gray-200"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
                     {/* Left Side - Booking Info */}
                     <div className="flex-1">
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex flex-col sm:flex-row gap-2 items-start justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {getTourType(booking.apiResponse)}
+                            {getTourType(booking)}
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
                             Reference: {booking.reference}
-                            {booking.apiResponse?.result?.details?.[0]
-                              ?.bookingId && (
+                            {booking.raynaBookingId && (
                               <span className="ml-4">
-                                Booking ID:{" "}
-                                {
-                                  booking.apiResponse.result.details[0]
-                                    .bookingId
-                                }
+                                Booking ID: {booking.raynaBookingId}
                               </span>
                             )}
                           </p>
@@ -371,6 +378,29 @@ const handleConfirmCancel = async () => {
                           <span>{booking.passengerCount} Passenger(s)</span>
                         </div>
                       </div>
+
+                      {/* Tour Date Information */}
+                      {booking.tourDetails && booking.tourDetails.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Tour Details
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-gray-500">Tour Date: </span>
+                              <span className="font-medium">
+                                {formatDate(booking.tourDetails[0].tourDate)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Pickup: </span>
+                              <span className="font-medium">
+                                {booking.tourDetails[0].pickup}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Lead Passenger Info */}
                       {booking.leadPassenger && (
@@ -429,6 +459,8 @@ const handleConfirmCancel = async () => {
                                 className={`font-medium ${
                                   booking.paymentStatus === "PAID"
                                     ? "text-green-600"
+                                    : booking.paymentStatus === "CANCELLED"
+                                    ? "text-red-600"
                                     : "text-yellow-600"
                                 }`}
                               >
@@ -440,7 +472,7 @@ const handleConfirmCancel = async () => {
 
                         <div className="bg-white rounded-lg p-4">
                           <h4 className="text-sm font-medium text-gray-700 mb-2">
-                            API Response
+                            Booking Status
                           </h4>
                           <div className="space-y-1">
                             {booking.apiResponse?.error ? (
@@ -448,14 +480,20 @@ const handleConfirmCancel = async () => {
                                 <strong>Error:</strong>{" "}
                                 {booking.apiResponse.error}
                               </div>
-                            ) : booking.apiResponse?.result?.details?.[0] ? (
-                              <div className="text-green-600 text-sm">
-                                <strong>Status:</strong>{" "}
-                                {booking.apiResponse.result.details[0].status}
+                            ) : booking.raynaStatus ? (
+                              <div className={
+                                booking.raynaStatus === 'CONFIRMED' 
+                                  ? "text-green-600 text-sm"
+                                  : booking.raynaStatus === 'FAILED'
+                                  ? "text-red-600 text-sm"
+                                  : "text-yellow-600 text-sm"
+                              }>
+                                <strong>Provider Status:</strong>{" "}
+                                {booking.raynaStatus}
                               </div>
                             ) : (
                               <div className="text-gray-500 text-sm">
-                                No API response data
+                                No external booking data
                               </div>
                             )}
                           </div>
@@ -472,6 +510,8 @@ const handleConfirmCancel = async () => {
                         <p className="text-sm text-gray-500">
                           {booking.paymentStatus === "PAID"
                             ? "Paid"
+                            : booking.paymentStatus === "CANCELLED"
+                            ? "Cancelled"
                             : "Payment Pending"}
                         </p>
                       </div>
@@ -502,7 +542,7 @@ const handleConfirmCancel = async () => {
                             <Trash2 className="h-4 w-4" />
                             <span>Cancel Booking</span>
                           </button>
-                         )} 
+                        )} 
 
                         {booking.apiResponse?.error && (
                           <button

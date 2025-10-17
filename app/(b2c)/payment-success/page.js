@@ -25,8 +25,12 @@ export default function PaymentSuccessPage() {
 
     try {
       setLoading(true);
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
+      
+      // Safely get token from storage
+      let token = null;
+      if (typeof window !== "undefined") {
+        token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      }
 
       if (!token) throw new Error("User not authenticated");
 
@@ -68,7 +72,7 @@ export default function PaymentSuccessPage() {
   }, [bookingId]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen text-center space-y-4">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
       {loading && <p className="text-lg">Verifying payment...</p>}
 
       {!loading && status === "success" && (
